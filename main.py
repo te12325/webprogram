@@ -237,7 +237,7 @@ def render_book_shelf(status_filter):
                         st.rerun()
 
                 # -------------------------------------------------------------
-                # 2) '읽기 완료' 섹션 (0.5단위 별점 및 구절/독후감 노트)
+                # 2) '읽기 완료' 섹션 (0.5단위 별점)
                 # -------------------------------------------------------------
                 elif status_filter == "읽기 완료":
                     st.success("🎉 완독한 책입니다!")
@@ -270,27 +270,27 @@ def render_book_shelf(status_filter):
                         st.rerun()
 
                 # -------------------------------------------------------------
-                # 공통: 📝 독서 노트 (마음에 드는 구절 & 독후감 기록)
+                # 공통: 💬 (따옴표/쉼표 이모티콘 - 독서 노트 입력창)
                 # -------------------------------------------------------------
                 st.divider()
-                with st.popover("📝 독서 노트 / 감상평 쓰기", use_container_width=True):
-                    st.write(f"**'{book['title']}' 독서 메모**")
-                    
+                
+                # expand_more 오류 방지 및 간단한 쉼표/따옴표 이모티콘 라벨 적용
+                with st.expander("💬 맘에 드는 구절 / 메모 남기기"):
                     note_text = st.text_area(
-                        "마음에 드는 구절, 인상 깊은 대사 또는 독후감을 자유롭게 적어보세요:",
+                        "기록하고 싶은 대사나 생각한 점을 적어보세요:",
                         value=book.get("notes", ""),
-                        height=150,
+                        height=120,
                         key=f"note_area_{book['id']}"
                     )
                     
-                    if st.button("노트 저장하기", key=f"save_note_{book['id']}"):
+                    if st.button("저장", key=f"save_note_{book['id']}"):
                         book["notes"] = note_text
-                        st.success("독서 노트가 성공적으로 저장되었습니다!")
+                        st.success("저장되었습니다!")
                         st.rerun()
 
-                # 저장된 노트가 있으면 메인 카드에 미니 미리보기 제공
+                # 저장된 노트가 있는 경우 미리보기 제공
                 if book.get("notes"):
-                    st.info(f"💬 **메모:** {book['notes'][:30]}..." if len(book['notes']) > 30 else f"💬 **메모:** {book['notes']}")
+                    st.caption(f"💬 {book['notes']}")
 
 # 각 탭에 데이터 연결
 with tab1:
