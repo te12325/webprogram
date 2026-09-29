@@ -14,21 +14,28 @@ st.set_page_config(
     layout="wide"
 )
 
-# 반듯하면서 부드럽고 귀여운 '고운돋움' (Gowun Dodum) 폰트 및 스타일 적용 Custom CSS
+# 기본 고운돋움 폰트 + 메인 타이틀 전용 클래식하고 고급스러운 '고운바탕' (Gowun Batang) 폰트 적용
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&display=swap');
 
-    /* 전체 앱 글꼴 지정 (고운돋움) */
+    /* 전체 앱 기본 글꼴 (고운돋움) */
     html, body, [class*="css"], div, span, label, input, button, textarea {
         font-family: 'Gowun Dodum', sans-serif !important;
     }
     
-    /* 제목 및 강조 텍스트 크기 조정 */
-    h1 {
-        font-size: 2.2rem !important;
+    /* 고급스러운 메인 타이틀 전용 스타일 (고운바탕) */
+    .luxury-title {
+        font-family: 'Gowun Batang', serif !important;
+        font-size: 2.5rem !important;
         font-weight: 700 !important;
+        letter-spacing: -0.5px !important;
+        color: #2C3E50 !important;
+        margin-bottom: 0px !important;
+        padding-top: 5px !important;
     }
+
+    /* 일반 H2, H3 제목 스타일 */
     h2, h3 {
         font-size: 1.6rem !important;
         font-weight: 600 !important;
@@ -81,7 +88,7 @@ if not st.session_state.user_name:
     
     with center_col:
         with st.container(border=True):
-            st.title("📚 나만의 책 아지트")
+            st.markdown('<div class="luxury-title">📚 나만의 책 아지트</div>', unsafe_allow_html=True)
             st.write("아지트에서 사용하실 이름을 입력해 주세요.")
             
             input_name = st.text_input("이름 또는 닉네임 입력", placeholder="예: 길동이", label_visibility="collapsed")
@@ -305,7 +312,7 @@ def show_book_details(book):
 # -----------------------------------------------------------------------------
 # 6. 메인 화면 - 헤더 영역 및 콤팩트 카드형 책장 시각화
 # -----------------------------------------------------------------------------
-# 메인 상단 헤더 (프로필 사진 + 커스텀 아지트 제목)
+# 메인 상단 헤더 (프로필 사진 + 커스텀 고급 폰트 적용 아지트 제목)
 header_col1, header_col2 = st.columns([1, 8])
 
 with header_col1:
@@ -316,7 +323,10 @@ with header_col1:
         st.write("👤")
 
 with header_col2:
-    st.title(f"📚 {st.session_state.user_name}님의 책 아지트")
+    # 고급스러운 고운바탕 폰트 적용 헤더
+    st.markdown(f'<div class="luxury-title">📚 {st.session_state.user_name}님의 책 아지트</div>', unsafe_allow_html=True)
+
+st.markdown("<br>", unsafe_allow_html=True)
 
 tab1, tab2, tab3 = st.tabs(["📖 읽는 중", "✅ 읽기 완료", "📌 위시리스트"])
 
