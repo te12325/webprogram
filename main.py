@@ -9,12 +9,12 @@ from io import BytesIO
 # 1. 페이지 기본 설정 및 세션 상태(데이터 저장소) 초기화
 # -----------------------------------------------------------------------------
 st.set_page_config(
-    page_title="책 저장소",
+    page_title="책 아지트",
     page_icon="📚",
     layout="wide"
 )
 
-# 반듯하면서 부드럽고 귀여운 '고운돋움' (Gowun Dodum) 폰트 적용 Custom CSS
+# 반듯하면서 부드럽고 귀여운 '고운돋움' (Gowun Dodum) 폰트 및 프로필 이미지 CSS
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap');
@@ -26,7 +26,7 @@ st.markdown("""
     
     /* 제목 및 강조 텍스트 크기 조정 */
     h1 {
-        font-size: 2.3rem !important;
+        font-size: 2.2rem !important;
         font-weight: 700 !important;
     }
     h2, h3 {
@@ -39,30 +39,68 @@ st.markdown("""
         font-size: 1.1rem !important;
     }
 
-    /* 카드 제목 및 줄바꿈 정리 */
-    .book-title {
-        font-weight: bold;
-        font-size: 1.05rem;
-        margin-top: 5px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+    /* 원형 프로필 이미지 스타일 */
+    .profile-img-container {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    .profile-img-container img {
+        border-radius: 50%;
+        object-fit: cover;
+        width: 70px;
+        height: 70px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
     </style>
 """, unsafe_allow_html=True)
 
-# 앱 데이터 및 팝업(모달) 상태 관리 세션 초기화
+# 앱 세션 변수 초기화
 if "my_books" not in st.session_state:
     st.session_state.my_books = []
 
 if "active_book_id" not in st.session_state:
     st.session_state.active_book_id = None
 
+if "user_name" not in st.session_state:
+    st.session_state.user_name = ""
+
+if "profile_image" not in st.session_state:
+    st.session_state.profile_image = None
+
 # Kakao 도서 검색 API 키 (필요시 발급받은 REST API 키 입력)
 KAKAO_API_KEY = "" 
 
 # -----------------------------------------------------------------------------
-# 2. 유틸리티 함수 (책 검색, 하루 독서량 계산, 별점 시각화)
+# 2. 최초 사용자 이름 입력 화면 (이름이 설정되지 않았을 때만 표시)
+# -----------------------------------------------------------------------------
+if not st.session_state.user_name:
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    _, center_col, _ = st.columns([1, 2, 1])
+    
+    with center_col:
+        with st.container(border=True):
+            st.title("📚 환영합니다!")
+            st.subheader("나만의 책 아지트를 시작해 보세요.")
+            st.write("아지트에서 사용하실 이름을 알려주세요.")
+            
+            input_name = st.text_input("이름 또는 닉네임 입력", placeholder="예: 길동이")
+            uploaded_profile = st.file_uploader("프로필 사진 등록 (선택사항)", type=["png", "jpg", "jpeg"])
+            
+            if st.button("책 아지트 입장하기 🚀", use_container_width=True):
+                if input_name.strip():
+                    st.session_state.user_name = input_name.strip()
+                    if uploaded_profile is not None:
+                        st.session_state.profile_image = uploaded_profile.getvalue()
+                    st.rerun()
+                else:
+                    st.warning("이름을 입력해 주세요!")
+    st.stop()
+
+
+# -----------------------------------------------------------------------------
+# 3. 유틸리티 함수 (책 검색, 하루 독서량 계산, 별점 시각화)
 # -----------------------------------------------------------------------------
 def search_book_kakao(query):
     """
@@ -126,10 +164,23 @@ def render_star_rating(rating):
 
 
 # -----------------------------------------------------------------------------
-# 3. 사이드바 - 책 등록하기
+# 4. 사이드바 - 프로필 관리 & 책 등록하기
 # -----------------------------------------------------------------------------
-st.sidebar.header("📖 책 등록하기")
+# 1) 프로필 설정 섹션
+st.sidebar.header("👤 프로필 설정")
+new_name = st.sidebar.text_input("이름 수정", value=st.session_state.user_name)
+if new_name != st.session_state.user_name and new_name.strip():
+    st.session_state.user_name = new_name.strip()
+    st.rerun()
 
+new_profile = st.sidebar.file_uploader("프로필 사진 변경", type=["png", "jpg", "jpeg"], key="side_profile")
+if new_profile is not None:
+    st.session_state.profile_image = new_profile.getvalue()
+
+st.sidebar.divider()
+
+# 2) 책 등록 섹션
+st.sidebar.header("📖 책 등록하기")
 search_term = st.sidebar.text_input("책 제목을 검색하세요")
 
 if search_term:
@@ -176,7 +227,7 @@ if search_term:
 
 
 # -----------------------------------------------------------------------------
-# 4. 상세 정보를 보여주는 팝업 모달 함수 (터치 시 실행)
+# 5. 상세 정보를 보여주는 팝업 모달 함수 (터치 시 실행)
 # -----------------------------------------------------------------------------
 @st.dialog("📚 도서 상세 및 기록 관리")
 def show_book_details(book):
@@ -255,9 +306,20 @@ def show_book_details(book):
 
 
 # -----------------------------------------------------------------------------
-# 5. 메인 화면 - 콤팩트 카드형 책장 시각화
+# 6. 메인 화면 - 헤더 영역 및 콤팩트 카드형 책장 시각화
 # -----------------------------------------------------------------------------
-st.title("📚 책 저장소")
+# 메인 상단 헤더 (프로필 사진 + 커스텀 아지트 제목)
+header_col1, header_col2 = st.columns([1, 8])
+
+with header_col1:
+    if st.session_state.profile_image:
+        image = Image.open(BytesIO(st.session_state.profile_image))
+        st.image(image, width=80)
+    else:
+        st.write("👤")
+
+with header_col2:
+    st.title(f"📚 {st.session_state.user_name}님의 책 아지트")
 
 tab1, tab2, tab3 = st.tabs(["📖 읽는 중", "✅ 읽기 완료", "📌 위시리스트"])
 
@@ -268,20 +330,15 @@ def render_compact_shelf(status_filter):
         st.info(f"'{status_filter}' 상태인 책이 없습니다. 사이드바에서 책을 추가해 보세요!")
         return
 
-    # 한 줄에 4개씩 콤팩트하게 배치
     cols = st.columns(4)
     
     for idx, book in enumerate(filtered_books):
         with cols[idx % 4]:
             with st.container(border=True):
-                # 1) 책 표지 이미지
                 st.image(book["cover_url"], use_container_width=True)
-                
-                # 2) 제목 및 저자 표시 (간결화)
                 st.markdown(f"**{book['title']}**")
                 st.caption(f"{book['author']}")
                 
-                # 3) 클릭/터치 시 상세 모달을 띄우는 버튼
                 if st.button("📝 기록", key=f"card_btn_{book['id']}", use_container_width=True):
                     st.session_state.active_book_id = book["id"]
                     show_book_details(book)
