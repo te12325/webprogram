@@ -240,16 +240,17 @@ def show_book_details(book):
             st.rerun()
 
     st.divider()
-    st.write("💬 **맘에 드는 구절 / 메모**")
+    st.write("💬 **인용구**")
     note_text = st.text_area(
-        "대사나 생각한 점을 기록해보세요:",
+        label="인용구 입력",
+        label_visibility="collapsed",
         value=book.get("notes", ""),
         height=120,
         key=f"modal_note_{book['id']}"
     )
-    if st.button("메모 저장", key=f"modal_save_note_{book['id']}"):
+    if st.button("인용구 저장", key=f"modal_save_note_{book['id']}"):
         book["notes"] = note_text
-        st.success("메모가 저장되었습니다!")
+        st.success("저장되었습니다!")
         st.rerun()
 
 
@@ -257,7 +258,7 @@ def show_book_details(book):
 # 5. 메인 화면 - 콤팩트 카드형 책장 시각화
 # -----------------------------------------------------------------------------
 st.title("📚 책 저장소")
-st.caption("책을 클릭하면 하루 분량, 평점, 독서 노트를 관리할 수 있습니다.")
+st.caption("책을 클릭하면 하루 분량, 평점, 인용구를 관리할 수 있습니다.")
 
 tab1, tab2, tab3 = st.tabs(["📖 읽는 중", "✅ 읽기 완료", "📌 위시리스트"])
 
@@ -268,7 +269,7 @@ def render_compact_shelf(status_filter):
         st.info(f"'{status_filter}' 상태인 책이 없습니다. 사이드바에서 책을 추가해 보세요!")
         return
 
-    # 한 줄에 4개씩 콤팩트하게배치
+    # 한 줄에 4개씩 콤팩트하게 배치
     cols = st.columns(4)
     
     for idx, book in enumerate(filtered_books):
