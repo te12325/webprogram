@@ -14,23 +14,29 @@ st.set_page_config(
     layout="wide"
 )
 
-# 동글동글한 한국어 폰트(Gamja Flower / Google Fonts) 적용 Custom CSS
+# 반듯하면서 부드럽고 귀여운 '고운돋움' (Gowun Dodum) 폰트 적용 Custom CSS
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Gamja+Flower&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap');
 
-    /* 전체 앱의 기본 글꼴을 동글동글한 폰트로 지정 */
-    html, body, [class*="css"], div, span, label, input, button {
-        font-family: 'Gamja Flower', cursive !important;
-        font-size: 1.15rem;
+    /* 전체 앱 글꼴 지정 (고운돋움) */
+    html, body, [class*="css"], div, span, label, input, button, textarea {
+        font-family: 'Gowun Dodum', sans-serif !important;
     }
     
-    /* 제목(H1, H2, H3)의 폰트 크기 및 모양 조정 */
+    /* 제목 및 강조 텍스트 크기 조정 */
     h1 {
-        font-size: 2.8rem !important;
+        font-size: 2.3rem !important;
+        font-weight: 700 !important;
     }
     h2, h3 {
-        font-size: 2.0rem !important;
+        font-size: 1.6rem !important;
+        font-weight: 600 !important;
+    }
+    
+    /* 탭 제목 폰트 크기 증대 */
+    button[data-baseweb="tab"] {
+        font-size: 1.1rem !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -71,7 +77,7 @@ def search_book_kakao(query):
                     "title": item.get("title", "제목 없음"),
                     "authors": item.get("authors", ["저자 미상"]),
                     "thumbnail": item.get("thumbnail", "https://via.placeholder.com/150x200.png?text=No+Cover"),
-                    # 카카오 API는 페이지 수를 지원하지 않으므로 기본값 설정
+                    # 카카오 API는 페이지 수를 직접 반환하지 않으므로 기본값 설정
                     "total_pages": 300 
                 })
             return books
@@ -122,7 +128,7 @@ if search_term:
             # 사용자 맞춤 정보 입력
             total_pages = st.number_input("전체 페이지 수", min_value=1, value=300, step=10)
             target_date = st.date_input("목표 완료일", datetime.date.today() + datetime.timedelta(days=14))
-            status = st.selectbox("독서 상태", ["읽는 중", "읽기 완료", "읽고 싶음"])
+            status = st.selectbox("독서 상태", ["읽는 중", "읽기 완료", "위시리스트"])
             
             submit_button = st.form_submit_button("내 책장에 추가")
             
@@ -149,8 +155,8 @@ if search_term:
 st.title("📚 책 저장소")
 st.caption("목표일을 설정하면 오늘 읽어야 할 분량을 자동으로 맞춰드립니다.")
 
-# 3개의 상태 탭 생성
-tab1, tab2, tab3 = st.tabs(["📖 읽는 중", "✅ 읽기 완료", "📌 읽고 싶음"])
+# 3개의 상태 탭 생성 ('읽고 싶음' -> '위시리스트'로 변경)
+tab1, tab2, tab3 = st.tabs(["📖 읽는 중", "✅ 읽기 완료", "📌 위시리스트"])
 
 # 세션에 저장된 책들을 상태별로 분류하는 함수
 def render_book_shelf(status_filter):
@@ -212,14 +218,14 @@ def render_book_shelf(status_filter):
                     st.success("🎉 완독한 책입니다!")
                     st.write(f"총 {book['total_pages']} 페이지")
 
-                # '읽고 싶음' 섹션
-                elif status_filter == "읽고 싶음":
-                    st.write(f"목표 페이지: {book['total_pages']}p")
+                # '위시리스트' 섹션
+                elif status_filter == "위시리스트":
+                    st.write(f"전체 페이지: {book['total_pages']}p")
                     if st.button("지금 읽기 시작", key=f"start_{book['id']}"):
                         book["status"] = "읽는 중"
                         st.rerun()
 
-# 각 탭에 해당 데이터 바인딩
+# 각 탭에 데이터 연결
 with tab1:
     render_book_shelf("읽는 중")
 
@@ -227,4 +233,4 @@ with tab2:
     render_book_shelf("읽기 완료")
 
 with tab3:
-    render_book_shelf("읽고 싶음")
+    render_book_shelf("위시리스트")
