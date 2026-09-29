@@ -34,7 +34,7 @@ st.markdown("""
         font-weight: 600 !important;
     }
     
-    /* 탭 제목 폰트 크기 증대 */
+    /* 탭 제목 폰트 크기 */
     button[data-baseweb="tab"] {
         font-size: 1.1rem !important;
     }
@@ -45,40 +45,40 @@ st.markdown("""
 if "my_books" not in st.session_state:
     st.session_state.my_books = []
 
-# Kakao 도서 검색 API 키 (필요시 발급받은 REST API 키 입력)
-KAKAO_API_KEY = "" 
-
 # -----------------------------------------------------------------------------
-# 2. 유틸리티 함수 (책 검색 및 하루 독서량 계산)
+# 2. 유틸리티 함수 (Google Books API 실제 도서 연동 및 독서량 계산)
 # -----------------------------------------------------------------------------
-def search_book_kakao(query):
+def search_books_google(query):
     """
-    제목 검색을 통해 실제 책 표지 URL과 도서 정보를 가져오는 함수
+    Google Books API를 활용해 실제 도서 검색 결과(표지, 저자, 전체 페이지 수)를 가져오는 함수
+    API 키 없이도 바로 사용 가능합니다.
     """
-    if not KAKAO_API_KEY:
-        # API 키가 없을 때 기본으로 반환할 샘플 표지 데이터
-        return [{
-            "title": query,
-            "authors": ["작자 미상"],
-            "thumbnail": "https://via.placeholder.com/150x200.png?text=No+Cover",
-            "total_pages": 300
-        }]
-    
-    url = f"https://dapi.kakao.com/v3/search/book?query={query}"
-    headers = {"Authorization": f"KakaoAK {KAKAO_API_KEY}"}
+    url = f"https://www.googleapis.com/books/v1/volumes?q={query}&maxResults=10"
     
     try:
-        response = requests.get(url, headers=headers)
+        response = requests.get(url)
         if response.status_code == 200:
-            results = response.json().get("documents", [])
+            data = response.json()
+            items = data.get("items", [])
             books = []
-            for item in results:
+            
+            for item in items:
+                volume_info = item.get("volumeInfo", {})
+                
+                # 표지 이미지 가져오기 (없으면 대체 이미지)
+                image_links = volume_info.get("imageLinks", {})
+                thumbnail = image_links.get("thumbnail") or image_links.get("smallThumbnail")
+                if thumbnail:
+                    # https 보안 연결로 변경
+                    thumbnail = thumbnail.replace("http://", "https://")
+                else:
+                    thumbnail = "https://via.placeholder.com/150x200.png?text=No+Cover"
+                
                 books.append({
-                    "title": item.get("title", "제목 없음"),
-                    "authors": item.get("authors", ["저자 미상"]),
-                    "thumbnail": item.get("thumbnail", "https://via.placeholder.com/150x200.png?text=No+Cover"),
-                    # 카카오 API는 페이지 수를 직접 반환하지 않으므로 기본값 설정
-                    "total_pages": 300 
+                    "title": volume_info.get("title", "제목 없음"),
+                    "authors": volume_info.get("authors", ["저자 미상"]),
+                    "thumbnail": thumbnail,
+                    "total_pages": volume_info.get("pageCount", 300) # 실제 페이지 수 불러오기
                 })
             return books
     except Exception as e:
@@ -112,7 +112,8 @@ st.sidebar.header("📖 새 책 등록하기")
 search_term = st.sidebar.text_input("책 제목을 검색하세요")
 
 if search_term:
-    search_results = search_book_kakao(search_term)
+    with st.sidebar.spinner("실제 도서 검색 중..."):
+        search_results = search_books_google(search_term)
     
     if search_results:
         selected_book = st.sidebar.selectbox(
@@ -121,12 +122,19 @@ if search_term:
             format_func=lambda x: f"{x['title']} ({', '.join(x['authors'])})"
         )
         
-        # 선택된 책의 정보 입력 폼
+        # 선택된 책의 미리보기 및 입력 폼
         with st.sidebar.form("add_book_form"):
-            st.write(f"**선택한 책:** {selected_book['title']}")
+            st.image(selected_book['thumbnail'], width=120)
+            st.write(f"**제목:** {selected_book['title']}")
+            st.write(f"**저자:** {', '.join(selected_book['authors'])}")
             
-            # 사용자 맞춤 정보 입력
-            total_pages = st.number_input("전체 페이지 수", min_value=1, value=300, step=10)
+            # API에서 받아온 실제 페이지 수를 기본값으로 설정 (필요시 수정 가능)
+            total_pages = st.number_input(
+                "전체 페이지 수", 
+                min_value=1, 
+                value=int(selected_book['total_pages']), 
+                step=10
+            )
             target_date = st.date_input("목표 완료일", datetime.date.today() + datetime.timedelta(days=14))
             status = st.selectbox("독서 상태", ["읽는 중", "읽기 완료", "위시리스트"])
             
@@ -155,7 +163,7 @@ if search_term:
 st.title("📚 책 저장소")
 st.caption("목표일을 설정하면 오늘 읽어야 할 분량을 자동으로 맞춰드립니다.")
 
-# 3개의 상태 탭 생성 ('읽고 싶음' -> '위시리스트'로 변경)
+# 3개의 상태 탭 생성
 tab1, tab2, tab3 = st.tabs(["📖 읽는 중", "✅ 읽기 완료", "📌 위시리스트"])
 
 # 세션에 저장된 책들을 상태별로 분류하는 함수
@@ -173,7 +181,7 @@ def render_book_shelf(status_filter):
         with cols[idx % 3]:
             # 카드 형태의 컨테이너
             with st.container(border=True):
-                # 책 표지 및 기본 정보
+                # 실제 책 표지 및 정보
                 st.image(book["cover_url"], use_container_width=True)
                 st.subheader(book["title"])
                 st.caption(f"저자: {book['author']}")
