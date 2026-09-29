@@ -91,7 +91,8 @@ if not st.session_state.user_name:
             st.markdown('<div class="luxury-title">📚 나만의 책 아지트</div>', unsafe_allow_html=True)
             st.write("아지트에서 사용하실 이름을 입력해 주세요.")
             
-            input_name = st.text_input("이름 또는 닉네임 입력", placeholder="예: 길동이", label_visibility="collapsed")
+            # '예: 길동이' 문구 제거 (placeholder="")
+            input_name = st.text_input("이름 또는 닉네임 입력", placeholder="", label_visibility="collapsed")
             
             st.markdown("<br>", unsafe_allow_html=True)
             if st.button("책 아지트 입장하기 🚀", use_container_width=True):
@@ -323,7 +324,6 @@ with header_col1:
         st.write("👤")
 
 with header_col2:
-    # 고급스러운 고운바탕 폰트 적용 헤더
     st.markdown(f'<div class="luxury-title">📚 {st.session_state.user_name}님의 책 아지트</div>', unsafe_allow_html=True)
 
 st.markdown("<br>", unsafe_allow_html=True)
