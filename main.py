@@ -126,9 +126,9 @@ def render_star_rating(rating):
 
 
 # -----------------------------------------------------------------------------
-# 3. 사이드바 - 새로운 책 추가하기
+# 3. 사이드바 - 책 등록하기
 # -----------------------------------------------------------------------------
-st.sidebar.header("📖 새 책 등록하기")
+st.sidebar.header("📖 책 등록하기")
 
 search_term = st.sidebar.text_input("책 제목을 검색하세요")
 
@@ -283,7 +283,7 @@ def render_compact_shelf(status_filter):
                 st.caption(f"{book['author']}")
                 
                 # 3) 클릭/터치 시 상세 모달을 띄우는 버튼
-                if st.button("📖 상세 / 기록", key=f"card_btn_{book['id']}", use_container_width=True):
+                if st.button("📝 기록", key=f"card_btn_{book['id']}", use_container_width=True):
                     st.session_state.active_book_id = book["id"]
                     show_book_details(book)
 
