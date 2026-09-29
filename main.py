@@ -38,12 +38,25 @@ st.markdown("""
     button[data-baseweb="tab"] {
         font-size: 1.1rem !important;
     }
+
+    /* 카드 제목 및 줄바꿈 정리 */
+    .book-title {
+        font-weight: bold;
+        font-size: 1.05rem;
+        margin-top: 5px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
     </style>
 """, unsafe_allow_html=True)
 
-# 앱이 새로고침되어도 데이터가 유지되도록 st.session_state에 데이터베이스 생성
+# 앱 데이터 및 팝업(모달) 상태 관리 세션 초기화
 if "my_books" not in st.session_state:
     st.session_state.my_books = []
+
+if "active_book_id" not in st.session_state:
+    st.session_state.active_book_id = None
 
 # Kakao 도서 검색 API 키 (필요시 발급받은 REST API 키 입력)
 KAKAO_API_KEY = "" 
@@ -56,7 +69,6 @@ def search_book_kakao(query):
     제목 검색을 통해 실제 책 표지 URL과 도서 정보를 가져오는 함수
     """
     if not KAKAO_API_KEY:
-        # API 키가 없을 때 기본으로 반환할 샘플 표지 데이터
         return [{
             "title": query,
             "authors": ["작자 미상"],
@@ -98,7 +110,6 @@ def calculate_daily_pages(total_pages, read_pages, target_date):
     if remaining_days <= 0:
         return remaining_pages, 0, "목표일이 지났거나 오늘이 목표일입니다."
 
-    # 하루 분량 계산 (소수점 올림 처리)
     daily_pages = -(-remaining_pages // remaining_days)
     return remaining_pages, remaining_days, daily_pages
 
@@ -131,19 +142,16 @@ if search_term:
             format_func=lambda x: f"{x['title']} ({', '.join(x['authors'])})"
         )
         
-        # 선택된 책의 정보 입력 폼
         with st.sidebar.form("add_book_form"):
             st.write(f"**선택한 책:** {selected_book['title']}")
             
-            # 사용자 맞춤 정보 입력
             total_pages = st.number_input("전체 페이지 수", min_value=1, value=300, step=10)
             target_date = st.date_input("목표 완료일", datetime.date.today() + datetime.timedelta(days=14))
             status = st.selectbox("독서 상태", ["읽는 중", "읽기 완료", "위시리스트"])
             
-            # 처음 추가할 때 '읽기 완료' 선택 시 별점 옵션 제공 (0.5 단위)
             initial_rating = 5.0
             if status == "읽기 완료":
-                rating_options = [i / 2 for i in range(1, 11)]  # 0.5 ~ 5.0
+                rating_options = [i / 2 for i in range(1, 11)]
                 initial_rating = st.select_slider("별점 평점 선택", options=rating_options, value=5.0)
 
             submit_button = st.form_submit_button("내 책장에 추가")
@@ -159,7 +167,7 @@ if search_term:
                     "target_date": target_date,
                     "status": status,
                     "rating": initial_rating if status == "읽기 완료" else 0.0,
-                    "notes": ""  # 독후감 및 맘에 드는 구절 저장용
+                    "notes": ""
                 }
                 st.session_state.my_books.append(new_book)
                 st.sidebar.success(f"'{selected_book['title']}' 책이 저장소에 추가되었습니다!")
@@ -168,136 +176,121 @@ if search_term:
 
 
 # -----------------------------------------------------------------------------
-# 4. 메인 화면 - 책 저장소 및 상태별 섹션
+# 4. 상세 정보를 보여주는 팝업 모달 함수 (터치 시 실행)
+# -----------------------------------------------------------------------------
+@st.dialog("📚 도서 상세 및 기록 관리")
+def show_book_details(book):
+    st.image(book["cover_url"], width=150)
+    st.subheader(book["title"])
+    st.caption(f"저자: {book['author']} | 전체 {book['total_pages']}p")
+    st.divider()
+
+    RATING_OPTIONS = [i / 2 for i in range(1, 11)]
+
+    # 1) 읽는 중 상태일 때 상세 정보
+    if book["status"] == "읽는 중":
+        rem_pages, rem_days, daily_target = calculate_daily_pages(
+            book["total_pages"], book["current_page"], book["target_date"]
+        )
+        progress = min(book["current_page"] / book["total_pages"], 1.0)
+        st.progress(progress, text=f"진행률: {int(progress * 100)}%")
+        
+        st.metric(
+            label="Today 목표 (오늘 읽을 분량)", 
+            value=f"{daily_target} 페이지/일",
+            delta=f"남은 날: {rem_days}일"
+        )
+        
+        new_page = st.number_input(
+            "현재 읽은 페이지 입력", 
+            min_value=0, 
+            max_value=book["total_pages"], 
+            value=book["current_page"],
+            key=f"modal_page_{book['id']}"
+        )
+        
+        if st.button("페이지 저장", key=f"modal_save_page_{book['id']}"):
+            book["current_page"] = new_page
+            if new_page >= book["total_pages"]:
+                book["status"] = "읽기 완료"
+                st.balloons()
+                st.success("축하합니다! 완독하셨습니다!")
+            st.rerun()
+
+    # 2) 읽기 완료 상태일 때 상세 정보
+    elif book["status"] == "읽기 완료":
+        st.success("🎉 완독한 책입니다!")
+        current_rating = book.get("rating", 5.0) or 5.0
+        st.write(f"**내 평점:** {render_star_rating(current_rating)}")
+        
+        new_rating = st.select_slider(
+            "평점 수정 (0.5 단위)",
+            options=RATING_OPTIONS,
+            value=current_rating,
+            key=f"modal_rating_{book['id']}"
+        )
+        if new_rating != book.get("rating"):
+            book["rating"] = new_rating
+            st.rerun()
+
+    # 3) 위시리스트 상태일 때 상세 정보
+    elif book["status"] == "위시리스트":
+        if st.button("지금 읽기 시작 📖", key=f"modal_start_{book['id']}"):
+            book["status"] = "읽는 중"
+            st.rerun()
+
+    st.divider()
+    st.write("💬 **맘에 드는 구절 / 메모**")
+    note_text = st.text_area(
+        "대사나 생각한 점을 기록해보세요:",
+        value=book.get("notes", ""),
+        height=120,
+        key=f"modal_note_{book['id']}"
+    )
+    if st.button("메모 저장", key=f"modal_save_note_{book['id']}"):
+        book["notes"] = note_text
+        st.success("메모가 저장되었습니다!")
+        st.rerun()
+
+
+# -----------------------------------------------------------------------------
+# 5. 메인 화면 - 콤팩트 카드형 책장 시각화
 # -----------------------------------------------------------------------------
 st.title("📚 책 저장소")
-st.caption("목표일을 설정하면 오늘 읽어야 할 분량을 자동으로 맞춰드립니다.")
+st.caption("책을 클릭하면 하루 분량, 평점, 독서 노트를 관리할 수 있습니다.")
 
-# 3개의 상태 탭 생성
 tab1, tab2, tab3 = st.tabs(["📖 읽는 중", "✅ 읽기 완료", "📌 위시리스트"])
 
-# 0.5단위 별점 옵션 리스트 생성 (0.5, 1.0, 1.5 ... 5.0)
-RATING_OPTIONS = [i / 2 for i in range(1, 11)]
-
-# 세션에 저장된 책들을 상태별로 분류하는 함수
-def render_book_shelf(status_filter):
+def render_compact_shelf(status_filter):
     filtered_books = [book for book in st.session_state.my_books if book["status"] == status_filter]
     
     if not filtered_books:
         st.info(f"'{status_filter}' 상태인 책이 없습니다. 사이드바에서 책을 추가해 보세요!")
         return
 
-    # 3열 grid로 책장 느낌 연출
-    cols = st.columns(3)
+    # 한 줄에 4개씩 콤팩트하게배치
+    cols = st.columns(4)
     
     for idx, book in enumerate(filtered_books):
-        with cols[idx % 3]:
-            # 카드 형태의 컨테이너
+        with cols[idx % 4]:
             with st.container(border=True):
-                # 책 표지 및 기본 정보
+                # 1) 책 표지 이미지
                 st.image(book["cover_url"], use_container_width=True)
-                st.subheader(book["title"])
-                st.caption(f"저자: {book['author']}")
                 
-                # -------------------------------------------------------------
-                # 1) '읽는 중' 섹션
-                # -------------------------------------------------------------
-                if status_filter == "읽는 중":
-                    rem_pages, rem_days, daily_target = calculate_daily_pages(
-                        book["total_pages"], book["current_page"], book["target_date"]
-                    )
-                    
-                    # 진행률 표시
-                    progress = min(book["current_page"] / book["total_pages"], 1.0)
-                    st.progress(progress, text=f"진행률: {int(progress * 100)}%")
-                    
-                    # 하루 자동 분량 안내 메트릭
-                    st.metric(
-                        label="Today 목표 (오늘 읽을 분량)", 
-                        value=f"{daily_target} 페이지/일",
-                        delta=f"남은 날: {rem_days}일"
-                    )
-                    
-                    # 페이지 업데이트 피드백 입력 폼
-                    new_page = st.number_input(
-                        "현재 읽은 페이지 입력", 
-                        min_value=0, 
-                        max_value=book["total_pages"], 
-                        value=book["current_page"],
-                        key=f"page_input_{book['id']}"
-                    )
-                    
-                    if st.button("기록 업데이트", key=f"btn_{book['id']}"):
-                        book["current_page"] = new_page
-                        # 완독 처리 체크
-                        if new_page >= book["total_pages"]:
-                            book["status"] = "읽기 완료"
-                            st.balloons()
-                            st.success("축하합니다! 완독하셨습니다!")
-                        st.rerun()
-
-                # -------------------------------------------------------------
-                # 2) '읽기 완료' 섹션 (0.5단위 별점)
-                # -------------------------------------------------------------
-                elif status_filter == "읽기 완료":
-                    st.success("🎉 완독한 책입니다!")
-                    
-                    # 별점 표시 및 수정
-                    current_rating = book.get("rating", 5.0)
-                    if current_rating == 0.0:
-                        current_rating = 5.0
-                        
-                    st.write(f"**내 평점:** {render_star_rating(current_rating)}")
-                    
-                    # 별점 수정 슬라이더
-                    new_rating = st.select_slider(
-                        "평점 수정 (0.5 단위)",
-                        options=RATING_OPTIONS,
-                        value=current_rating,
-                        key=f"rating_slider_{book['id']}"
-                    )
-                    if new_rating != book.get("rating"):
-                        book["rating"] = new_rating
-                        st.rerun()
-
-                # -------------------------------------------------------------
-                # 3) '위시리스트' 섹션
-                # -------------------------------------------------------------
-                elif status_filter == "위시리스트":
-                    st.write(f"전체 페이지: {book['total_pages']}p")
-                    if st.button("지금 읽기 시작 📖", key=f"start_{book['id']}"):
-                        book["status"] = "읽는 중"
-                        st.rerun()
-
-                # -------------------------------------------------------------
-                # 공통: 💬 (따옴표/쉼표 이모티콘 - 독서 노트 입력창)
-                # -------------------------------------------------------------
-                st.divider()
+                # 2) 제목 및 저자 표시 (간결화)
+                st.markdown(f"**{book['title']}**")
+                st.caption(f"{book['author']}")
                 
-                # expand_more 오류 방지 및 간단한 쉼표/따옴표 이모티콘 라벨 적용
-                with st.expander("💬 맘에 드는 구절 / 메모 남기기"):
-                    note_text = st.text_area(
-                        "기록하고 싶은 대사나 생각한 점을 적어보세요:",
-                        value=book.get("notes", ""),
-                        height=120,
-                        key=f"note_area_{book['id']}"
-                    )
-                    
-                    if st.button("저장", key=f"save_note_{book['id']}"):
-                        book["notes"] = note_text
-                        st.success("저장되었습니다!")
-                        st.rerun()
+                # 3) 클릭/터치 시 상세 모달을 띄우는 버튼
+                if st.button("📖 상세 / 기록", key=f"card_btn_{book['id']}", use_container_width=True):
+                    st.session_state.active_book_id = book["id"]
+                    show_book_details(book)
 
-                # 저장된 노트가 있는 경우 미리보기 제공
-                if book.get("notes"):
-                    st.caption(f"💬 {book['notes']}")
-
-# 각 탭에 데이터 연결
 with tab1:
-    render_book_shelf("읽는 중")
+    render_compact_shelf("읽는 중")
 
 with tab2:
-    render_book_shelf("읽기 완료")
+    render_compact_shelf("읽기 완료")
 
 with tab3:
-    render_book_shelf("위시리스트")
+    render_compact_shelf("위시리스트")
