@@ -14,7 +14,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# 반듯하면서 부드럽고 귀여운 '고운돋움' (Gowun Dodum) 폰트 및 프로필 이미지 CSS
+# 반듯하면서 부드럽고 귀여운 '고운돋움' (Gowun Dodum) 폰트 및 스타일 적용 Custom CSS
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap');
@@ -76,23 +76,20 @@ KAKAO_API_KEY = ""
 # 2. 최초 사용자 이름 입력 화면 (이름이 설정되지 않았을 때만 표시)
 # -----------------------------------------------------------------------------
 if not st.session_state.user_name:
-    st.markdown("<br><br>", unsafe_allow_html=True)
+    st.markdown("<br><br><br>", unsafe_allow_html=True)
     _, center_col, _ = st.columns([1, 2, 1])
     
     with center_col:
         with st.container(border=True):
-            st.title("📚 환영합니다!")
-            st.subheader("나만의 책 아지트를 시작해 보세요.")
-            st.write("아지트에서 사용하실 이름을 알려주세요.")
+            st.title("📚 나만의 책 아지트")
+            st.write("아지트에서 사용하실 이름을 입력해 주세요.")
             
-            input_name = st.text_input("이름 또는 닉네임 입력", placeholder="예: 길동이")
-            uploaded_profile = st.file_uploader("프로필 사진 등록 (선택사항)", type=["png", "jpg", "jpeg"])
+            input_name = st.text_input("이름 또는 닉네임 입력", placeholder="예: 길동이", label_visibility="collapsed")
             
+            st.markdown("<br>", unsafe_allow_html=True)
             if st.button("책 아지트 입장하기 🚀", use_container_width=True):
                 if input_name.strip():
                     st.session_state.user_name = input_name.strip()
-                    if uploaded_profile is not None:
-                        st.session_state.profile_image = uploaded_profile.getvalue()
                     st.rerun()
                 else:
                     st.warning("이름을 입력해 주세요!")
@@ -166,14 +163,14 @@ def render_star_rating(rating):
 # -----------------------------------------------------------------------------
 # 4. 사이드바 - 프로필 관리 & 책 등록하기
 # -----------------------------------------------------------------------------
-# 1) 프로필 설정 섹션
+# 1) 프로필 설정 섹션 (아지트 입장 후 등록/변경 가능)
 st.sidebar.header("👤 프로필 설정")
 new_name = st.sidebar.text_input("이름 수정", value=st.session_state.user_name)
 if new_name != st.session_state.user_name and new_name.strip():
     st.session_state.user_name = new_name.strip()
     st.rerun()
 
-new_profile = st.sidebar.file_uploader("프로필 사진 변경", type=["png", "jpg", "jpeg"], key="side_profile")
+new_profile = st.sidebar.file_uploader("프로필 사진 등록/변경", type=["png", "jpg", "jpeg"], key="side_profile")
 if new_profile is not None:
     st.session_state.profile_image = new_profile.getvalue()
 
