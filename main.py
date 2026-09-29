@@ -9,10 +9,31 @@ from io import BytesIO
 # 1. 페이지 기본 설정 및 세션 상태(데이터 저장소) 초기화
 # -----------------------------------------------------------------------------
 st.set_page_config(
-    page_title="나만의 디지털 책장",
+    page_title="책 저장소",
     page_icon="📚",
     layout="wide"
 )
+
+# 동글동글한 한국어 폰트(Gamja Flower / Google Fonts) 적용 Custom CSS
+st.markdown("""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Gamja+Flower&display=swap');
+
+    /* 전체 앱의 기본 글꼴을 동글동글한 폰트로 지정 */
+    html, body, [class*="css"], div, span, label, input, button {
+        font-family: 'Gamja Flower', cursive !important;
+        font-size: 1.15rem;
+    }
+    
+    /* 제목(H1, H2, H3)의 폰트 크기 및 모양 조정 */
+    h1 {
+        font-size: 2.8rem !important;
+    }
+    h2, h3 {
+        font-size: 2.0rem !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
 # 앱이 새로고침되어도 데이터가 유지되도록 st.session_state에 데이터베이스 생성
 if "my_books" not in st.session_state:
@@ -29,7 +50,7 @@ def search_book_kakao(query):
     제목 검색을 통해 실제 책 표지 URL과 도서 정보를 가져오는 함수
     """
     if not KAKAO_API_KEY:
-        # API 키가 없을 때 기본으로 반환할 더미 데이터
+        # API 키가 없을 때 기본으로 반환할 샘플 표지 데이터
         return [{
             "title": query,
             "authors": ["작자 미상"],
@@ -50,7 +71,7 @@ def search_book_kakao(query):
                     "title": item.get("title", "제목 없음"),
                     "authors": item.get("authors", ["저자 미상"]),
                     "thumbnail": item.get("thumbnail", "https://via.placeholder.com/150x200.png?text=No+Cover"),
-                    # 카카오 API는 페이지 수를 직접 주지 않으므로 기본값 설정
+                    # 카카오 API는 페이지 수를 지원하지 않으므로 기본값 설정
                     "total_pages": 300 
                 })
             return books
@@ -123,9 +144,9 @@ if search_term:
 
 
 # -----------------------------------------------------------------------------
-# 4. 메인 화면 - 책장 시각화 및 상태별 섹션
+# 4. 메인 화면 - 책 저장소 및 상태별 섹션
 # -----------------------------------------------------------------------------
-st.title("📚 나의 스마트 디지털 책장")
+st.title("📚 책 저장소")
 st.caption("목표일을 설정하면 오늘 읽어야 할 분량을 자동으로 맞춰드립니다.")
 
 # 3개의 상태 탭 생성
