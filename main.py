@@ -14,7 +14,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# 나눔스퀘어라운드 폰트 & 연핑크/라벤더 파스텔 그라데이션 적용 Custom CSS
+# 나눔스퀘어라운드 폰트 & 연핑크/보라(라벤더) 파스텔 그라데이션 적용 Custom CSS
 st.markdown("""
     <style>
     @import url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_two@1.0/NanumSquareRound.woff');
@@ -34,8 +34,8 @@ st.markdown("""
         padding-top: 5px !important;
     }
 
-    /* 사이드바 프로필 설정 네모 박스 - 연한 핑크 ~ 라벤더 파스텔 그라데이션 강제 적용 */
-    [data-testid="stSidebar"] [data-testid="stVerticalBlockBorderWrapper"]:first-child > div {
+    /* 사이드바 첫 번째 컨테이너(프로필 설정)에 연핑크 ~ 파스텔 보라 그라데이션 강제 지정 */
+    [data-testid="stSidebar"] div[data-testid="stVerticalBlockBorderWrapper"]:first-of-type > div {
         background: linear-gradient(135deg, #FFE4E6 0%, #F3E8FF 50%, #E0E7FF 100%) !important;
         border-radius: 20px !important;
         border: 1px solid #F3D2DF !important;
@@ -178,10 +178,10 @@ def render_star_rating(rating):
 
 
 # -----------------------------------------------------------------------------
-# 4. 사이드바 - 파스텔 핑크/라벤더 그라데이션 박스 안 프로필 설정 & 책 등록
+# 4. 사이드바 - 연핑크/파스텔 보라 그라데이션 박스 안 프로필 설정 & 책 등록
 # -----------------------------------------------------------------------------
 with st.sidebar:
-    # 연핑크/라벤더 그라데이션이 들어간 프로필 설정 박스
+    # 프로필 설정 전체를 연핑크/파스텔 보라 그라데이션 네모 박스 안에 포함
     with st.container(border=True):
         st.markdown('<h3 style="margin-top:0; color:#4A3E3D; font-size:1.2rem;">👤 프로필 설정</h3>', unsafe_allow_html=True)
         
