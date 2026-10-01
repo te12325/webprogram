@@ -15,21 +15,28 @@ st.set_page_config(
     layout="wide"
 )
 
-# 나눔스퀘어라운드 폰트 & 파스텔 CSS 및 캘린더 스타일
+# 온글잎 윤택체 폰트 & 연핑크/라벤더 파스텔 그라데이션 적용 Custom CSS
 st.markdown("""
     <style>
-    @import url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_two@1.0/NanumSquareRound.woff');
+    @import url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2108@1.1/Ownglyph_yuntaek-Kd.woff');
 
-    /* 전체 앱 기본 글꼴 (나눔스퀘어라운드) */
-    html, body, [class*="css"], div, span, label, input, button, textarea {
-        font-family: 'NanumSquareRound', sans-serif !important;
+    @font-face {
+        font-family: 'Ownglyph_yuntaek-Kd';
+        src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2108@1.1/Ownglyph_yuntaek-Kd.woff') format('woff');
+        font-weight: normal;
+        font-style: normal;
+    }
+
+    /* 전체 앱 기본 글꼴 (온글잎 윤택체) */
+    html, body, [class*="css"], div, span, label, input, button, textarea, p, h1, h2, h3, h4, h5, h6 {
+        font-family: 'Ownglyph_yuntaek-Kd', sans-serif !important;
     }
 
     /* 메인 타이틀 스타일 */
     .luxury-title {
-        font-family: 'NanumSquareRound', sans-serif !important;
-        font-size: 2.3rem !important;
-        font-weight: 800 !important;
+        font-family: 'Ownglyph_yuntaek-Kd', sans-serif !important;
+        font-size: 2.6rem !important;
+        font-weight: bold !important;
         color: #4A3E3D !important;
         margin-bottom: 0px !important;
     }
@@ -70,7 +77,7 @@ st.markdown("""
     /* 메인 상단 큰 페이지 전환 탭 스타일 */
     button[data-baseweb="tab"] {
         border-radius: 16px 16px 0 0 !important;
-        font-size: 1.2rem !important;
+        font-size: 1.3rem !important;
         font-weight: bold !important;
         padding: 12px 24px !important;
     }
@@ -90,7 +97,7 @@ st.markdown("""
     }
     .cal-day-num {
         font-weight: bold;
-        font-size: 0.9rem;
+        font-size: 1rem;
         color: #495057;
         margin-bottom: 4px;
     }
@@ -410,33 +417,28 @@ with page_tab2:
                         if st.button("📝 기록", key=f"btn_w_{book['id']}", use_container_width=True):
                             show_book_details(book)
 
-    # 3) 2026년부터 시작하는 실제 독서 캘린더 (완독 시 표지 표시)
+    # 3) 2026년부터 시작하는 실제 독서 캘린더
     with shelf_tab3:
         st.subheader("📅 완독 기록 캘린더")
         
-        # 연도 및 월 선택 컨트롤 (2026년부터 시작)
         c_year_col, c_month_col = st.columns(2)
         with c_year_col:
             selected_year = st.selectbox("연도 선택", list(range(2026, 2036)), index=0)
         with c_month_col:
             selected_month = st.selectbox("월 선택", list(range(1, 13)), index=datetime.date.today().month - 1 if selected_year == 2026 else 0)
 
-        # 선택된 월의 날짜 매트릭스 계산
         month_calendar = calendar.monthcalendar(selected_year, selected_month)
         week_days = ["일", "월", "화", "수", "목", "금", "토"]
         
-        # 요일 헤더 표시
         day_cols = st.columns(7)
         for idx, day_name in enumerate(week_days):
             day_cols[idx].markdown(f"**{day_name}**")
             
-        # 완독된 책 데이터 매핑
         completed_map = {}
         for b in st.session_state.my_books:
             if b.get("status") == "읽기 완료" and b.get("completed_date"):
                 completed_map[b["completed_date"]] = b
 
-        # 캘린더 Grid 출력
         for week in month_calendar:
             w_cols = st.columns(7)
             for idx, day in enumerate(week):
@@ -446,7 +448,6 @@ with page_tab2:
                     else:
                         date_str = f"{selected_year}-{selected_month:02d}-{day:02d}"
                         
-                        # 해당 날짜에 완독한 책이 있는 경우 표지 표시
                         if date_str in completed_map:
                             matched_book = completed_map[date_str]
                             st.markdown(f"""
