@@ -34,13 +34,13 @@ st.markdown("""
         padding-top: 5px !important;
     }
 
-    /* 사이드바 프로필 설정 박스 - 연한 핑크/라벤더 파스텔 그라데이션 */
-    .profile-card {
+    /* 사이드바 프로필 전체 감싸는 카드 - 연한 핑크/라벤더 파스텔 그라데이션 */
+    .profile-card-container {
         background: linear-gradient(135deg, #FFE5EC 0%, #E8E8FF 100%);
         border-radius: 20px !important;
-        padding: 20px;
+        padding: 18px;
         margin-bottom: 20px;
-        box-shadow: 0 4px 15px rgba(230, 200, 230, 0.4);
+        box-shadow: 0 4px 15px rgba(230, 200, 230, 0.35);
         border: 1px solid #F0D5E6;
     }
 
@@ -188,16 +188,13 @@ def render_star_rating(rating):
 
 
 # -----------------------------------------------------------------------------
-# 4. 사이드바 - 프로필 관리 (연핑크/라벤더 그라데이션 박스) & 책 등록하기
+# 4. 사이드바 - 프로필 관리 (모든 요소가 연핑크/라벤더 그라데이션 박스 안에 포함) & 책 등록하기
 # -----------------------------------------------------------------------------
-# 1) 연핑크 / 라벤더 파스텔 그라데이션 프로필 카드
-st.sidebar.markdown("""
-    <div class="profile-card">
-        <h3 style="margin-top:0; color:#5A4A58; font-size:1.2rem;">👤 프로필 설정</h3>
-    </div>
-""", unsafe_allow_html=True)
-
+# 1) 전체 프로필 설정 요소(제목 + 이름 입력창 + 사진 변경)를 포함하는 둥근 스마트 카드
 with st.sidebar:
+    st.markdown('<div class="profile-card-container">', unsafe_allow_html=True)
+    st.markdown('<h3 style="margin-top:0; color:#4A3E3D; font-size:1.2rem;">👤 프로필 설정</h3>', unsafe_allow_html=True)
+    
     new_name = st.text_input("이름 수정", value=st.session_state.user_name)
     if new_name != st.session_state.user_name and new_name.strip():
         st.session_state.user_name = new_name.strip()
@@ -206,6 +203,8 @@ with st.sidebar:
     new_profile = st.file_uploader("프로필 사진 등록/변경", type=["png", "jpg", "jpeg"], key="side_profile")
     if new_profile is not None:
         st.session_state.profile_image = new_profile.getvalue()
+        
+    st.markdown('</div>', unsafe_allow_html=True)
 
 st.sidebar.divider()
 
