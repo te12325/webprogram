@@ -14,7 +14,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# 나눔스퀘어라운드 폰트 & 연핑크/보라(라벤더) 파스텔 그라데이션 적용 Custom CSS
+# 나눔스퀘어라운드 폰트 & 연핑크/라벤더 파스텔 그라데이션 적용 Custom CSS
 st.markdown("""
     <style>
     @import url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_two@1.0/NanumSquareRound.woff');
@@ -31,10 +31,9 @@ st.markdown("""
         font-weight: 800 !important;
         color: #4A3E3D !important;
         margin-bottom: 0px !important;
-        padding-top: 5px !important;
     }
 
-    /* 사이드바 첫 번째 컨테이너(프로필 설정)에 연핑크 ~ 파스텔 보라 그라데이션 강제 지정 */
+    /* 사이드바 첫 번째 컨테이너(프로필 설정) 연핑크 ~ 파스텔 보라 그라데이션 적용 */
     [data-testid="stSidebar"] div[data-testid="stVerticalBlockBorderWrapper"]:first-of-type > div {
         background: linear-gradient(135deg, #FFE4E6 0%, #F3E8FF 50%, #E0E7FF 100%) !important;
         border-radius: 20px !important;
@@ -67,11 +66,12 @@ st.markdown("""
         border-radius: 20px !important;
     }
 
-    /* 탭 모서리 둥글게 */
+    /* 메인 상단 큰 페이지 전환 탭 스타일 */
     button[data-baseweb="tab"] {
-        border-radius: 12px 12px 0 0 !important;
-        font-size: 1.1rem !important;
+        border-radius: 16px 16px 0 0 !important;
+        font-size: 1.2rem !important;
         font-weight: bold !important;
+        padding: 12px 24px !important;
     }
 
     /* 이미지 모서리 둥글게 */
@@ -178,10 +178,9 @@ def render_star_rating(rating):
 
 
 # -----------------------------------------------------------------------------
-# 4. 사이드바 - 연핑크/파스텔 보라 그라데이션 박스 안 프로필 설정 & 책 등록
+# 4. 사이드바 - 프로필 설정 & 책 등록
 # -----------------------------------------------------------------------------
 with st.sidebar:
-    # 프로필 설정 전체를 연핑크/파스텔 보라 그라데이션 네모 박스 안에 포함
     with st.container(border=True):
         st.markdown('<h3 style="margin-top:0; color:#4A3E3D; font-size:1.2rem;">👤 프로필 설정</h3>', unsafe_allow_html=True)
         
@@ -196,7 +195,6 @@ with st.sidebar:
 
     st.divider()
 
-    # 책 등록 섹션
     st.header("📖 책 등록하기")
     search_term = st.text_input("책 제목을 검색하세요")
 
@@ -255,7 +253,6 @@ def show_book_details(book):
 
     RATING_OPTIONS = [i / 2 for i in range(1, 11)]
 
-    # 1) 읽는 중
     if book["status"] == "읽는 중":
         rem_pages, rem_days, daily_target = calculate_daily_pages(
             book["total_pages"], book["current_page"], book["target_date"]
@@ -285,7 +282,6 @@ def show_book_details(book):
                 st.success("축하합니다! 완독하셨습니다!")
             st.rerun()
 
-    # 2) 읽기 완료
     elif book["status"] == "읽기 완료":
         st.success("🎉 완독한 책입니다!")
         current_rating = book.get("rating", 5.0) or 5.0
@@ -301,7 +297,6 @@ def show_book_details(book):
             book["rating"] = new_rating
             st.rerun()
 
-    # 3) 위시리스트
     elif book["status"] == "위시리스트":
         if st.button("지금 읽기 시작 📖", key=f"modal_start_{book['id']}"):
             book["status"] = "읽는 중"
@@ -323,49 +318,112 @@ def show_book_details(book):
 
 
 # -----------------------------------------------------------------------------
-# 6. 메인 화면
+# 6. 메인 화면 - 2개 큰 칸(페이지) 구역 생성
 # -----------------------------------------------------------------------------
-header_col1, header_col2 = st.columns([1, 8])
+page_tab1, page_tab2 = st.tabs([f"👤 {st.session_state.user_name}의 아지트", "📚 내 책장"])
 
-with header_col1:
-    if st.session_state.profile_image:
-        image = Image.open(BytesIO(st.session_state.profile_image))
-        st.image(image, width=80)
-    else:
-        st.write("👤")
-
-with header_col2:
-    st.markdown(f'<div class="luxury-title">📚 {st.session_state.user_name}님의 책 아지트</div>', unsafe_allow_html=True)
-
-st.markdown("<br>", unsafe_allow_html=True)
-
-tab1, tab2, tab3 = st.tabs(["📖 읽는 중", "✅ 읽기 완료", "📌 위시리스트"])
-
-def render_compact_shelf(status_filter):
-    filtered_books = [book for book in st.session_state.my_books if book["status"] == status_filter]
-    
-    if not filtered_books:
-        st.info(f"'{status_filter}' 상태인 책이 없습니다. 사이드바에서 책을 추가해 보세요!")
-        return
-
-    cols = st.columns(4)
-    
-    for idx, book in enumerate(filtered_books):
-        with cols[idx % 4]:
-            with st.container(border=True):
-                st.image(book["cover_url"], use_container_width=True)
-                st.markdown(f"**{book['title']}**")
-                st.caption(f"{book['author']}")
+# -----------------------------------------------------------------------------
+# PAGE 1: (사용자의 이름)의 아지트
+# -----------------------------------------------------------------------------
+with page_tab1:
+    with st.container(border=True):
+        col1, col2 = st.columns([1, 4])
+        
+        with col1:
+            if st.session_state.profile_image:
+                image = Image.open(BytesIO(st.session_state.profile_image))
+                st.image(image, width=130)
+            else:
+                st.markdown("""
+                    <div style="font-size: 80px; text-align: center; background-color: #F3E8FF; border-radius: 50%; width: 120px; height: 120px; line-height: 120px;">
+                        👤
+                    </div>
+                """, unsafe_allow_html=True)
                 
-                if st.button("📝 기록", key=f"card_btn_{book['id']}", use_container_width=True):
-                    st.session_state.active_book_id = book["id"]
-                    show_book_details(book)
+        with col2:
+            st.markdown(f'<div class="luxury-title">📚 {st.session_state.user_name}의 아지트</div>', unsafe_allow_html=True)
+            st.write("나만의 독서 목표와 기록을 차곡차곡 쌓아가는 공간입니다.")
+            
+            # 간단한 서머리 메트릭
+            total_b = len(st.session_state.my_books)
+            reading_b = len([b for b in st.session_state.my_books if b['status'] == '읽는 중'])
+            completed_b = len([b for b in st.session_state.my_books if b['status'] == '읽기 완료'])
+            
+            m1, m2, m3 = st.columns(3)
+            m1.metric("총 등록 도서", f"{total_b}권")
+            m2.metric("현재 읽는 중", f"{reading_b}권")
+            m3.metric("완독한 도서", f"{completed_b}권")
 
-with tab1:
-    render_compact_shelf("읽는 중")
+# -----------------------------------------------------------------------------
+# PAGE 2: 내 책장 (위시리스트 ➔ 캘린더 ➔ 평점 순서 선택)
+# -----------------------------------------------------------------------------
+with page_tab2:
+    shelf_tab1, shelf_tab2, shelf_tab3, shelf_tab4 = st.tabs(["📖 읽는 중", "📌 위시리스트", "📅 캘린더", "⭐ 평점"])
+    
+    # 1) 읽는 중
+    with shelf_tab1:
+        reading_books = [b for b in st.session_state.my_books if b["status"] == "읽는 중"]
+        if not reading_books:
+            st.info("현재 읽고 있는 책이 없습니다. 사이드바에서 책을 등록해 보세요!")
+        else:
+            cols = st.columns(4)
+            for idx, book in enumerate(reading_books):
+                with cols[idx % 4]:
+                    with st.container(border=True):
+                        st.image(book["cover_url"], use_container_width=True)
+                        st.markdown(f"**{book['title']}**")
+                        st.caption(f"{book['author']}")
+                        if st.button("📝 기록", key=f"btn_r_{book['id']}", use_container_width=True):
+                            show_book_details(book)
 
-with tab2:
-    render_compact_shelf("읽기 완료")
+    # 2) 위시리스트
+    with shelf_tab2:
+        wish_books = [b for b in st.session_state.my_books if b["status"] == "위시리스트"]
+        if not wish_books:
+            st.info("위시리스트에 담긴 책이 없습니다.")
+        else:
+            cols = st.columns(4)
+            for idx, book in enumerate(wish_books):
+                with cols[idx % 4]:
+                    with st.container(border=True):
+                        st.image(book["cover_url"], use_container_width=True)
+                        st.markdown(f"**{book['title']}**")
+                        st.caption(f"{book['author']}")
+                        if st.button("📝 기록", key=f"btn_w_{book['id']}", use_container_width=True):
+                            show_book_details(book)
 
-with tab3:
-    render_compact_shelf("위시리스트")
+    # 3) 캘린더
+    with shelf_tab3:
+        st.subheader("📅 목표 독서 일정 캘린더")
+        calendar_data = []
+        for b in st.session_state.my_books:
+            calendar_data.append({
+                "책 제목": b["title"],
+                "상태": b["status"],
+                "목표 완료일": b["target_date"],
+                "진행률": f"{int((b['current_page'] / b['total_pages']) * 100)}%" if b['total_pages'] > 0 else "0%"
+            })
+        if calendar_data:
+            df_cal = pd.DataFrame(calendar_data)
+            st.dataframe(df_cal, use_container_width=True)
+        else:
+            st.info("등록된 일정 데이터가 없습니다.")
+
+    # 4) 평점
+    with shelf_tab4:
+        st.subheader("⭐ 완독 도서 평점 모아보기")
+        completed_books = [b for b in st.session_state.my_books if b["status"] == "읽기 완료"]
+        if not completed_books:
+            st.info("아직 완독한 책이 없습니다.")
+        else:
+            # 평점 높은 순 정렬
+            completed_books.sort(key=lambda x: x.get("rating", 0), reverse=True)
+            cols = st.columns(4)
+            for idx, book in enumerate(completed_books):
+                with cols[idx % 4]:
+                    with st.container(border=True):
+                        st.image(book["cover_url"], use_container_width=True)
+                        st.markdown(f"**{book['title']}**")
+                        st.caption(render_star_rating(book.get("rating", 5.0)))
+                        if st.button("📝 기록", key=f"btn_c_{book['id']}", use_container_width=True):
+                            show_book_details(book)
