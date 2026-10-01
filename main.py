@@ -13,33 +13,7 @@ st.set_page_config(
     page_icon="📚",
     layout="wide"
 )
-# 나눔스퀘어라운드 폰트 & 연핑크/라벤더 파스텔 그라데이션 적용 Custom CSS
-st.markdown("""
-    <style>
-    @import url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_two@1.0/NanumSquareRound.woff');
 
-    /* 전체 앱 기본 글꼴 (나눔스퀘어라운드) */
-    html, body, [class*="css"], div, span, label, input, button, textarea {
-        font-family: 'NanumSquareRound', sans-serif !important;
-    }
-
-    /* 메인 타이틀 스타일 */
-    .luxury-title {
-        font-family: 'NanumSquareRound', sans-serif !important;
-        font-size: 2.3rem !important;
-        font-weight: 800 !important;
-        color: #4A3E3D !important;
-        margin-bottom: 0px !important;
-        padding-top: 5px !important;
-    }
-
-    /* 프로필 커스텀 그라데이션 카드의 내부 라벨 색상 */
-    .profile-box-title {
-        color: #4A3E3D !important;
-        font-size: 1.2rem !important;
-        font-weight: bold !important;
-        margin-bottom: 12px !important;
-    }
 # 나눔스퀘어라운드 폰트 & 연핑크/라벤더 파스텔 그라데이션 적용 Custom CSS
 st.markdown("""
     <style>
