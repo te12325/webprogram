@@ -14,7 +14,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# 동글동글하고 깔끔한 '나눔스퀘어라운드' 폰트 & 연핑크/라벤더 그라데이션 박스 Custom CSS
+# 나눔스퀘어라운드 폰트 & 연핑크/라벤더 파스텔 그라데이션 적용 Custom CSS
 st.markdown("""
     <style>
     @import url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_two@1.0/NanumSquareRound.woff');
@@ -24,7 +24,7 @@ st.markdown("""
         font-family: 'NanumSquareRound', sans-serif !important;
     }
 
-    /* 메인 아지트 타이틀 폰트 및 스타일 */
+    /* 메인 타이틀 스타일 */
     .luxury-title {
         font-family: 'NanumSquareRound', sans-serif !important;
         font-size: 2.3rem !important;
@@ -34,16 +34,16 @@ st.markdown("""
         padding-top: 5px !important;
     }
 
-    /* 사이드바 맨 위 첫 번째 컨테이너(프로필 설정 네모 박스) 스타일링 */
+    /* 사이드바 프로필 설정 네모 박스 - 연한 핑크 ~ 라벤더 파스텔 그라데이션 강제 적용 */
     [data-testid="stSidebar"] [data-testid="stVerticalBlockBorderWrapper"]:first-child > div {
-        background: linear-gradient(135deg, #FFE5EC 0%, #E8E8FF 100%) !important;
+        background: linear-gradient(135deg, #FFE4E6 0%, #F3E8FF 50%, #E0E7FF 100%) !important;
         border-radius: 20px !important;
-        border: 1px solid #F0D5E6 !important;
-        padding: 16px !important;
-        box-shadow: 0 4px 15px rgba(230, 200, 230, 0.35) !important;
+        border: 1px solid #F3D2DF !important;
+        padding: 18px !important;
+        box-shadow: 0 4px 15px rgba(243, 210, 223, 0.4) !important;
     }
 
-    /* 모든 버튼 모서리 둥글게 */
+    /* 버튼 모서리 둥글게 */
     div.stButton > button {
         border-radius: 14px !important;
         font-weight: bold !important;
@@ -54,7 +54,7 @@ st.markdown("""
         transform: translateY(-1px);
     }
 
-    /* 모든 입력창(Input, Select, Textarea) 모서리 둥글게 */
+    /* 입력창 모서리 둥글게 */
     div[data-baseweb="input"], div[data-baseweb="select"], div[data-baseweb="textarea"] {
         border-radius: 14px !important;
     }
@@ -62,12 +62,12 @@ st.markdown("""
         border-radius: 14px !important;
     }
 
-    /* 기본 카드 컨테이너들 모서리 둥글게 */
+    /* 카드 컨테이너 모서리 둥글게 */
     [data-testid="stForm"], div[data-testid="stVerticalBlockBorderWrapper"] > div {
         border-radius: 20px !important;
     }
 
-    /* 탭(Tab) 스타일 둥글게 */
+    /* 탭 모서리 둥글게 */
     button[data-baseweb="tab"] {
         border-radius: 12px 12px 0 0 !important;
         font-size: 1.1rem !important;
@@ -81,7 +81,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 앱 세션 변수 초기화
+# 세션 변수 초기화
 if "my_books" not in st.session_state:
     st.session_state.my_books = []
 
@@ -98,7 +98,7 @@ if "profile_image" not in st.session_state:
 KAKAO_API_KEY = "" 
 
 # -----------------------------------------------------------------------------
-# 2. 최초 사용자 이름 입력 화면 (이름이 설정되지 않았을 때만 표시)
+# 2. 최초 사용자 이름 입력 화면
 # -----------------------------------------------------------------------------
 if not st.session_state.user_name:
     st.markdown("<br><br><br>", unsafe_allow_html=True)
@@ -123,12 +123,9 @@ if not st.session_state.user_name:
 
 
 # -----------------------------------------------------------------------------
-# 3. 유틸리티 함수 (책 검색, 하루 독서량 계산, 별점 시각화)
+# 3. 유틸리티 함수
 # -----------------------------------------------------------------------------
 def search_book_kakao(query):
-    """
-    제목 검색을 통해 실제 책 표지 URL과 도서 정보를 가져오는 함수
-    """
     if not KAKAO_API_KEY:
         return [{
             "title": query,
@@ -158,9 +155,6 @@ def search_book_kakao(query):
     return []
 
 def calculate_daily_pages(total_pages, read_pages, target_date):
-    """
-    남은 페이지 수와 남은 날짜를 계산하여 하루 권장 독서량을 자동 산출하는 함수
-    """
     today = datetime.date.today()
     remaining_days = (target_date - today).days
     remaining_pages = total_pages - read_pages
@@ -175,9 +169,6 @@ def calculate_daily_pages(total_pages, read_pages, target_date):
     return remaining_pages, remaining_days, daily_pages
 
 def render_star_rating(rating):
-    """
-    0.5 단위 숫자 평점을 별 모양 이모티콘 문자열로 변환해주는 함수
-    """
     full_stars = int(rating)
     has_half = (rating - full_stars) >= 0.5
     empty_stars = 5 - full_stars - (1 if has_half else 0)
@@ -187,10 +178,10 @@ def render_star_rating(rating):
 
 
 # -----------------------------------------------------------------------------
-# 4. 사이드바 - 프로필 설정 (연핑크/라벤더 둥근 모서리 박스 안에 완전 포함) & 책 등록
+# 4. 사이드바 - 파스텔 핑크/라벤더 그라데이션 박스 안 프로필 설정 & 책 등록
 # -----------------------------------------------------------------------------
 with st.sidebar:
-    # [프로필 설정 / 이름 수정 / 사진 등록] 요소 전체를 감싸는 둥근 컨테이너
+    # 연핑크/라벤더 그라데이션이 들어간 프로필 설정 박스
     with st.container(border=True):
         st.markdown('<h3 style="margin-top:0; color:#4A3E3D; font-size:1.2rem;">👤 프로필 설정</h3>', unsafe_allow_html=True)
         
@@ -205,7 +196,7 @@ with st.sidebar:
 
     st.divider()
 
-    # 2) 책 등록 섹션
+    # 책 등록 섹션
     st.header("📖 책 등록하기")
     search_term = st.text_input("책 제목을 검색하세요")
 
@@ -253,7 +244,7 @@ with st.sidebar:
 
 
 # -----------------------------------------------------------------------------
-# 5. 상세 정보를 보여주는 팝업 모달 함수 (터치 시 실행)
+# 5. 상세 정보를 보여주는 팝업 모달 함수
 # -----------------------------------------------------------------------------
 @st.dialog("📚 도서 상세 및 기록 관리")
 def show_book_details(book):
@@ -264,7 +255,7 @@ def show_book_details(book):
 
     RATING_OPTIONS = [i / 2 for i in range(1, 11)]
 
-    # 1) 읽는 중 상태일 때 상세 정보
+    # 1) 읽는 중
     if book["status"] == "읽는 중":
         rem_pages, rem_days, daily_target = calculate_daily_pages(
             book["total_pages"], book["current_page"], book["target_date"]
@@ -294,7 +285,7 @@ def show_book_details(book):
                 st.success("축하합니다! 완독하셨습니다!")
             st.rerun()
 
-    # 2) 읽기 완료 상태일 때 상세 정보
+    # 2) 읽기 완료
     elif book["status"] == "읽기 완료":
         st.success("🎉 완독한 책입니다!")
         current_rating = book.get("rating", 5.0) or 5.0
@@ -310,7 +301,7 @@ def show_book_details(book):
             book["rating"] = new_rating
             st.rerun()
 
-    # 3) 위시리스트 상태일 때 상세 정보
+    # 3) 위시리스트
     elif book["status"] == "위시리스트":
         if st.button("지금 읽기 시작 📖", key=f"modal_start_{book['id']}"):
             book["status"] = "읽는 중"
@@ -332,7 +323,7 @@ def show_book_details(book):
 
 
 # -----------------------------------------------------------------------------
-# 6. 메인 화면 - 헤더 영역 및 콤팩트 카드형 책장 시각화
+# 6. 메인 화면
 # -----------------------------------------------------------------------------
 header_col1, header_col2 = st.columns([1, 8])
 
