@@ -14,51 +14,70 @@ st.set_page_config(
     layout="wide"
 )
 
-# 기본 고운돋움 폰트 + 메인 타이틀 전용 클래식하고 고급스러운 '고운바탕' (Gowun Batang) 폰트 적용
+# 동글동글하고 깔끔한 '나눔스퀘어라운드' 폰트 & 연핑크/라벤더 그라데이션 & 둥근 모서리 Custom CSS
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&display=swap');
+    @import url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_two@1.0/NanumSquareRound.woff');
 
-    /* 전체 앱 기본 글꼴 (고운돋움) */
+    /* 전체 앱 기본 글꼴 (나눔스퀘어라운드) */
     html, body, [class*="css"], div, span, label, input, button, textarea {
-        font-family: 'Gowun Dodum', sans-serif !important;
+        font-family: 'NanumSquareRound', sans-serif !important;
     }
-    
-    /* 고급스러운 메인 타이틀 전용 스타일 (고운바탕) */
+
+    /* 메인 아지트 타이틀 폰트 및 스타일 */
     .luxury-title {
-        font-family: 'Gowun Batang', serif !important;
-        font-size: 2.5rem !important;
-        font-weight: 700 !important;
-        letter-spacing: -0.5px !important;
-        color: #2C3E50 !important;
+        font-family: 'NanumSquareRound', sans-serif !important;
+        font-size: 2.3rem !important;
+        font-weight: 800 !important;
+        color: #4A3E3D !important;
         margin-bottom: 0px !important;
         padding-top: 5px !important;
     }
 
-    /* 일반 H2, H3 제목 스타일 */
-    h2, h3 {
-        font-size: 1.6rem !important;
-        font-weight: 600 !important;
-    }
-    
-    /* 탭 제목 폰트 크기 증대 */
-    button[data-baseweb="tab"] {
-        font-size: 1.1rem !important;
+    /* 사이드바 프로필 설정 박스 - 연한 핑크/라벤더 파스텔 그라데이션 */
+    .profile-card {
+        background: linear-gradient(135deg, #FFE5EC 0%, #E8E8FF 100%);
+        border-radius: 20px !important;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 15px rgba(230, 200, 230, 0.4);
+        border: 1px solid #F0D5E6;
     }
 
-    /* 원형 프로필 이미지 스타일 */
-    .profile-img-container {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        margin-bottom: 20px;
+    /* 모든 버튼 모서리 둥글게 */
+    div.stButton > button {
+        border-radius: 14px !important;
+        font-weight: bold !important;
+        border: none !important;
+        transition: all 0.2s ease-in-out;
     }
-    .profile-img-container img {
-        border-radius: 50%;
-        object-fit: cover;
-        width: 70px;
-        height: 70px;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    div.stButton > button:hover {
+        transform: translateY(-1px);
+    }
+
+    /* 모든 입력창(Input, Select, Textarea) 모서리 둥글게 */
+    div[data-baseweb="input"], div[data-baseweb="select"], div[data-baseweb="textarea"] {
+        border-radius: 14px !important;
+    }
+    input, textarea {
+        border-radius: 14px !important;
+    }
+
+    /* 카드 컨테이너 모서리 둥글게 & 부드러운 그림자 */
+    [data-testid="stForm"], div[data-testid="stVerticalBlockBorderWrapper"] > div {
+        border-radius: 20px !important;
+    }
+
+    /* 탭(Tab) 스타일 둥글게 */
+    button[data-baseweb="tab"] {
+        border-radius: 12px 12px 0 0 !important;
+        font-size: 1.1rem !important;
+        font-weight: bold !important;
+    }
+
+    /* 이미지 모서리 둥글게 */
+    img {
+        border-radius: 14px !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -88,10 +107,10 @@ if not st.session_state.user_name:
     
     with center_col:
         with st.container(border=True):
-            st.markdown('<div class="luxury-title">📚 나만의 책 아지트</div>', unsafe_allow_html=True)
+            st.markdown('<div class="luxury-title" style="text-align: center;">📚 나만의 책 아지트</div>', unsafe_allow_html=True)
+            st.markdown("<br>", unsafe_allow_html=True)
             st.write("아지트에서 사용하실 이름을 입력해 주세요.")
             
-            # '예: 길동이' 문구 제거 (placeholder="")
             input_name = st.text_input("이름 또는 닉네임 입력", placeholder="", label_visibility="collapsed")
             
             st.markdown("<br>", unsafe_allow_html=True)
@@ -169,18 +188,24 @@ def render_star_rating(rating):
 
 
 # -----------------------------------------------------------------------------
-# 4. 사이드바 - 프로필 관리 & 책 등록하기
+# 4. 사이드바 - 프로필 관리 (연핑크/라벤더 그라데이션 박스) & 책 등록하기
 # -----------------------------------------------------------------------------
-# 1) 프로필 설정 섹션 (아지트 입장 후 등록/변경 가능)
-st.sidebar.header("👤 프로필 설정")
-new_name = st.sidebar.text_input("이름 수정", value=st.session_state.user_name)
-if new_name != st.session_state.user_name and new_name.strip():
-    st.session_state.user_name = new_name.strip()
-    st.rerun()
+# 1) 연핑크 / 라벤더 파스텔 그라데이션 프로필 카드
+st.sidebar.markdown("""
+    <div class="profile-card">
+        <h3 style="margin-top:0; color:#5A4A58; font-size:1.2rem;">👤 프로필 설정</h3>
+    </div>
+""", unsafe_allow_html=True)
 
-new_profile = st.sidebar.file_uploader("프로필 사진 등록/변경", type=["png", "jpg", "jpeg"], key="side_profile")
-if new_profile is not None:
-    st.session_state.profile_image = new_profile.getvalue()
+with st.sidebar:
+    new_name = st.text_input("이름 수정", value=st.session_state.user_name)
+    if new_name != st.session_state.user_name and new_name.strip():
+        st.session_state.user_name = new_name.strip()
+        st.rerun()
+
+    new_profile = st.file_uploader("프로필 사진 등록/변경", type=["png", "jpg", "jpeg"], key="side_profile")
+    if new_profile is not None:
+        st.session_state.profile_image = new_profile.getvalue()
 
 st.sidebar.divider()
 
@@ -313,7 +338,6 @@ def show_book_details(book):
 # -----------------------------------------------------------------------------
 # 6. 메인 화면 - 헤더 영역 및 콤팩트 카드형 책장 시각화
 # -----------------------------------------------------------------------------
-# 메인 상단 헤더 (프로필 사진 + 커스텀 고급 폰트 적용 아지트 제목)
 header_col1, header_col2 = st.columns([1, 8])
 
 with header_col1:
