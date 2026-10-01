@@ -34,12 +34,13 @@ st.markdown("""
         padding-top: 5px !important;
     }
 
-    /* 프로필 커스텀 그라데이션 카드의 내부 라벨 색상 */
-    .profile-box-title {
-        color: #4A3E3D !important;
-        font-size: 1.2rem !important;
-        font-weight: bold !important;
-        margin-bottom: 12px !important;
+    /* 사이드바 프로필 설정 네모 박스 - 연한 핑크 ~ 라벤더 파스텔 그라데이션 강제 적용 */
+    [data-testid="stSidebar"] [data-testid="stVerticalBlockBorderWrapper"]:first-child > div {
+        background: linear-gradient(135deg, #FFE4E6 0%, #F3E8FF 50%, #E0E7FF 100%) !important;
+        border-radius: 20px !important;
+        border: 1px solid #F3D2DF !important;
+        padding: 18px !important;
+        box-shadow: 0 4px 15px rgba(243, 210, 223, 0.4) !important;
     }
 
     /* 버튼 모서리 둥글게 */
@@ -180,29 +181,18 @@ def render_star_rating(rating):
 # 4. 사이드바 - 파스텔 핑크/라벤더 그라데이션 박스 안 프로필 설정 & 책 등록
 # -----------------------------------------------------------------------------
 with st.sidebar:
-    # 100% 확실하게 연핑크/라벤더 파스텔 그라데이션이 적용되는 HTML 박스 생성
-    st.markdown("""
-        <div style="
-            background: linear-gradient(135deg, #FFE4E6 0%, #F3E8FF 50%, #E0E7FF 100%);
-            border-radius: 20px;
-            padding: 16px;
-            border: 1px solid #F3D2DF;
-            box-shadow: 0 4px 15px rgba(243, 210, 223, 0.4);
-            margin-bottom: 15px;
-        ">
-            <div class="profile-box-title">👤 프로필 설정</div>
-    """, unsafe_allow_html=True)
-    
-    new_name = st.text_input("이름 수정", value=st.session_state.user_name)
-    if new_name != st.session_state.user_name and new_name.strip():
-        st.session_state.user_name = new_name.strip()
-        st.rerun()
+    # 연핑크/라벤더 그라데이션이 들어간 프로필 설정 박스
+    with st.container(border=True):
+        st.markdown('<h3 style="margin-top:0; color:#4A3E3D; font-size:1.2rem;">👤 프로필 설정</h3>', unsafe_allow_html=True)
+        
+        new_name = st.text_input("이름 수정", value=st.session_state.user_name)
+        if new_name != st.session_state.user_name and new_name.strip():
+            st.session_state.user_name = new_name.strip()
+            st.rerun()
 
-    new_profile = st.file_uploader("프로필 사진 등록/변경", type=["png", "jpg", "jpeg"], key="side_profile")
-    if new_profile is not None:
-        st.session_state.profile_image = new_profile.getvalue()
-
-    st.markdown("</div>", unsafe_allow_html=True)
+        new_profile = st.file_uploader("프로필 사진 등록/변경", type=["png", "jpg", "jpeg"], key="side_profile")
+        if new_profile is not None:
+            st.session_state.profile_image = new_profile.getvalue()
 
     st.divider()
 
