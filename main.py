@@ -14,7 +14,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# 동글동글하고 깔끔한 '나눔스퀘어라운드' 폰트 & 연핑크/라벤더 그라데이션 & 둥근 모서리 Custom CSS
+# 동글동글하고 깔끔한 '나눔스퀘어라운드' 폰트 & 연핑크/라벤더 그라데이션 박스 Custom CSS
 st.markdown("""
     <style>
     @import url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_two@1.0/NanumSquareRound.woff');
@@ -34,14 +34,13 @@ st.markdown("""
         padding-top: 5px !important;
     }
 
-    /* 사이드바 프로필 전체 감싸는 카드 - 연한 핑크/라벤더 파스텔 그라데이션 */
-    .profile-card-container {
-        background: linear-gradient(135deg, #FFE5EC 0%, #E8E8FF 100%);
+    /* 사이드바 맨 위 첫 번째 컨테이너(프로필 설정 네모 박스) 스타일링 */
+    [data-testid="stSidebar"] [data-testid="stVerticalBlockBorderWrapper"]:first-child > div {
+        background: linear-gradient(135deg, #FFE5EC 0%, #E8E8FF 100%) !important;
         border-radius: 20px !important;
-        padding: 18px;
-        margin-bottom: 20px;
-        box-shadow: 0 4px 15px rgba(230, 200, 230, 0.35);
-        border: 1px solid #F0D5E6;
+        border: 1px solid #F0D5E6 !important;
+        padding: 16px !important;
+        box-shadow: 0 4px 15px rgba(230, 200, 230, 0.35) !important;
     }
 
     /* 모든 버튼 모서리 둥글게 */
@@ -63,7 +62,7 @@ st.markdown("""
         border-radius: 14px !important;
     }
 
-    /* 카드 컨테이너 모서리 둥글게 & 부드러운 그림자 */
+    /* 기본 카드 컨테이너들 모서리 둥글게 */
     [data-testid="stForm"], div[data-testid="stVerticalBlockBorderWrapper"] > div {
         border-radius: 20px !important;
     }
@@ -188,71 +187,69 @@ def render_star_rating(rating):
 
 
 # -----------------------------------------------------------------------------
-# 4. 사이드바 - 프로필 관리 (모든 요소가 연핑크/라벤더 그라데이션 박스 안에 포함) & 책 등록하기
+# 4. 사이드바 - 프로필 설정 (연핑크/라벤더 둥근 모서리 박스 안에 완전 포함) & 책 등록
 # -----------------------------------------------------------------------------
-# 1) 전체 프로필 설정 요소(제목 + 이름 입력창 + 사진 변경)를 포함하는 둥근 스마트 카드
 with st.sidebar:
-    st.markdown('<div class="profile-card-container">', unsafe_allow_html=True)
-    st.markdown('<h3 style="margin-top:0; color:#4A3E3D; font-size:1.2rem;">👤 프로필 설정</h3>', unsafe_allow_html=True)
-    
-    new_name = st.text_input("이름 수정", value=st.session_state.user_name)
-    if new_name != st.session_state.user_name and new_name.strip():
-        st.session_state.user_name = new_name.strip()
-        st.rerun()
-
-    new_profile = st.file_uploader("프로필 사진 등록/변경", type=["png", "jpg", "jpeg"], key="side_profile")
-    if new_profile is not None:
-        st.session_state.profile_image = new_profile.getvalue()
+    # [프로필 설정 / 이름 수정 / 사진 등록] 요소 전체를 감싸는 둥근 컨테이너
+    with st.container(border=True):
+        st.markdown('<h3 style="margin-top:0; color:#4A3E3D; font-size:1.2rem;">👤 프로필 설정</h3>', unsafe_allow_html=True)
         
-    st.markdown('</div>', unsafe_allow_html=True)
+        new_name = st.text_input("이름 수정", value=st.session_state.user_name)
+        if new_name != st.session_state.user_name and new_name.strip():
+            st.session_state.user_name = new_name.strip()
+            st.rerun()
 
-st.sidebar.divider()
+        new_profile = st.file_uploader("프로필 사진 등록/변경", type=["png", "jpg", "jpeg"], key="side_profile")
+        if new_profile is not None:
+            st.session_state.profile_image = new_profile.getvalue()
 
-# 2) 책 등록 섹션
-st.sidebar.header("📖 책 등록하기")
-search_term = st.sidebar.text_input("책 제목을 검색하세요")
+    st.divider()
 
-if search_term:
-    search_results = search_book_kakao(search_term)
-    
-    if search_results:
-        selected_book = st.sidebar.selectbox(
-            "검색 결과에서 책을 선택하세요:",
-            search_results,
-            format_func=lambda x: f"{x['title']} ({', '.join(x['authors'])})"
-        )
+    # 2) 책 등록 섹션
+    st.header("📖 책 등록하기")
+    search_term = st.text_input("책 제목을 검색하세요")
+
+    if search_term:
+        search_results = search_book_kakao(search_term)
         
-        with st.sidebar.form("add_book_form"):
-            st.write(f"**선택한 책:** {selected_book['title']}")
+        if search_results:
+            selected_book = st.selectbox(
+                "검색 결과에서 책을 선택하세요:",
+                search_results,
+                format_func=lambda x: f"{x['title']} ({', '.join(x['authors'])})"
+            )
             
-            total_pages = st.number_input("전체 페이지 수", min_value=1, value=300, step=10)
-            target_date = st.date_input("목표 완료일", datetime.date.today() + datetime.timedelta(days=14))
-            status = st.selectbox("독서 상태", ["읽는 중", "읽기 완료", "위시리스트"])
-            
-            initial_rating = 5.0
-            if status == "읽기 완료":
-                rating_options = [i / 2 for i in range(1, 11)]
-                initial_rating = st.select_slider("별점 평점 선택", options=rating_options, value=5.0)
+            with st.form("add_book_form"):
+                st.write(f"**선택한 책:** {selected_book['title']}")
+                
+                total_pages = st.number_input("전체 페이지 수", min_value=1, value=300, step=10)
+                target_date = st.date_input("목표 완료일", datetime.date.today() + datetime.timedelta(days=14))
+                status = st.selectbox("독서 상태", ["읽는 중", "읽기 완료", "위시리스트"])
+                
+                initial_rating = 5.0
+                if status == "읽기 완료":
+                    rating_options = [i / 2 for i in range(1, 11)]
+                    initial_rating = st.select_slider("별점 평점 선택", options=rating_options, value=5.0)
 
-            submit_button = st.form_submit_button("내 책장에 추가")
-            
-            if submit_button:
-                new_book = {
-                    "id": len(st.session_state.my_books) + 1,
-                    "title": selected_book["title"],
-                    "author": ", ".join(selected_book["authors"]),
-                    "cover_url": selected_book["thumbnail"],
-                    "total_pages": total_pages,
-                    "current_page": total_pages if status == "읽기 완료" else 0,
-                    "target_date": target_date,
-                    "status": status,
-                    "rating": initial_rating if status == "읽기 완료" else 0.0,
-                    "notes": ""
-                }
-                st.session_state.my_books.append(new_book)
-                st.sidebar.success(f"'{selected_book['title']}' 책이 저장소에 추가되었습니다!")
-    else:
-        st.sidebar.warning("검색 결과가 없습니다.")
+                submit_button = st.form_submit_button("내 책장에 추가")
+                
+                if submit_button:
+                    new_book = {
+                        "id": len(st.session_state.my_books) + 1,
+                        "title": selected_book["title"],
+                        "author": ", ".join(selected_book["authors"]),
+                        "cover_url": selected_book["thumbnail"],
+                        "total_pages": total_pages,
+                        "current_page": total_pages if status == "읽기 완료" else 0,
+                        "target_date": target_date,
+                        "status": status,
+                        "rating": initial_rating if status == "읽기 완료" else 0.0,
+                        "notes": ""
+                    }
+                    st.session_state.my_books.append(new_book)
+                    st.success(f"'{selected_book['title']}' 책이 저장소에 추가되었습니다!")
+        else:
+            st.warning("검색 결과가 없습니다.")
 
 
 # -----------------------------------------------------------------------------
