@@ -1,20 +1,3 @@
-<!-- ... existing code ... -->
-            <!-- Python Streamlit Code Display View (Hidden by default) -->
-            <div id="pythonCodeView" class="hidden space-y-4">
-                <div class="flex items-center justify-between bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
-                    <div>
-                        <h3 class="font-bold text-stone-800 flex items-center gap-2">
-                            <i class="ph-bold ph-code text-purple-600"></i> Streamlit 전용 main.py 코드 (오류 수정 완료)
-                        </h3>
-                        <p class="text-xs text-stone-500">SyntaxError 완벽 수정! 아래 [코드 복사] 버튼을 눌러 main.py에 붙여넣으세요.</p>
-                    </div>
-                    <button onclick="copyPythonCode()" 
-                        class="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs py-2 px-3 rounded-lg shadow transition-colors flex items-center gap-1">
-                        <i class="ph-bold ph-copy"></i> 코드 복사
-                    </button>
-                </div>
-
-                <pre class="bg-stone-900 text-stone-100 p-4 rounded-xl text-xs overflow-x-auto font-mono leading-relaxed shadow-inner"><code id="pythonCodeBlock">
 import streamlit as st
 import pandas as pd
 import datetime
@@ -31,25 +14,7 @@ st.set_page_config(
 
 # 반듯하고 귀여운 글씨체 (Gowun Dodum / 고운돋움 폰트 적용)
 st.markdown("""
-    &lt;style&gt;
-    @import url('https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap');
-
-    /* 앱 전체에 반듯하면서도 정감있는 고운돋움 폰트 적용 */
-    html, body, [class*="css"], div, span, label, input, button {
-        font-family: 'Gowun Dodum', sans-serif !important;
-        font-size: 1.05rem;
-    }
     
-    /* 제목 폰트 크기 조정 */
-    h1 {
-        font-size: 2.5rem !important;
-        font-weight: 700 !important;
-    }
-    h2, h3 {
-        font-size: 1.8rem !important;
-        font-weight: 600 !important;
-    }
-    &lt;/style&gt;
 """, unsafe_allow_html=True)
 
 # 앱이 새로고침되어도 데이터가 유지되도록 st.session_state에 데이터베이스 생성
@@ -63,11 +28,7 @@ KAKAO_API_KEY = ""
 # 2. 유틸리티 함수 (책 검색 및 하루 독서량 계산)
 # -----------------------------------------------------------------------------
 def search_book_kakao(query):
-    """
-    제목 검색을 통해 실제 책 표지 URL과 도서 정보를 가져오는 함수
-    """
     if not KAKAO_API_KEY:
-        # API 키가 없을 때 기본으로 반환할 더미 샘플 데이터
         return [{
             "title": query,
             "authors": ["작자 미상"],
@@ -96,20 +57,16 @@ def search_book_kakao(query):
     return []
 
 def calculate_daily_pages(total_pages, read_pages, target_date):
-    """
-    남은 페이지 수와 남은 날짜를 계산하여 하루 권장 독서량을 자동 산출하는 함수
-    """
     today = datetime.date.today()
     remaining_days = (target_date - today).days
     remaining_pages = total_pages - read_pages
 
-    if remaining_pages &lt;= 0:
+    if remaining_pages <= 0:
         return 0, 0, "목표 달성!"
     
-    if remaining_days &lt;= 0:
+    if remaining_days <= 0:
         return remaining_pages, 0, "목표일이 지났거나 오늘이 목표일입니다."
 
-    # 하루 분량 자동 계산 (소수점 올림 처리)
     daily_pages = -(-remaining_pages // remaining_days)
     return remaining_pages, remaining_days, daily_pages
 
@@ -131,11 +88,9 @@ if search_term:
             format_func=lambda x: f"{x['title']} ({', '.join(x['authors'])})"
         )
         
-        # 선택된 책의 정보 입력 폼
         with st.sidebar.form("add_book_form"):
             st.write(f"**선택한 책:** {selected_book['title']}")
             
-            # 사용자 맞춤 정보 입력
             total_pages = st.number_input("전체 페이지 수", min_value=1, value=300, step=10)
             target_date = st.date_input("목표 완료일", datetime.date.today() + datetime.timedelta(days=14))
             status = st.selectbox("독서 상태", ["읽는 중", "읽기 완료", "읽고 싶음"])
@@ -165,7 +120,6 @@ if search_term:
 st.title("📚 책 저장소 & 캘린더")
 st.caption("목표일을 설정하면 오늘 읽어야 할 분량을 자동으로 맞춰드립니다.")
 
-# 3개의 상태 탭 생성
 tab1, tab2, tab3 = st.tabs(["📖 읽는 중", "✅ 읽기 완료", "📌 읽고 싶음"])
 
 def render_book_shelf(status_filter):
@@ -232,8 +186,3 @@ with tab2:
 
 with tab3:
     render_book_shelf("읽고 싶음")
-</code></pre>
-            </div>
-        </div>
-    </main>
-<!-- ... existing code ... -->
