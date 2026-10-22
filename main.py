@@ -1,128 +1,96 @@
-    shelf_tab1, shelf_tab2, shelf_tab3, shelf_tab4, shelf_tab5 = st.tabs(
-        ["📖 읽는 중", "📌 위시리스트", "📅 캘린더", "⭐ 평점", "🏅 인장 컬렉션"]
-    )
-    
-    # 서브 탭 1) 읽는 중인 책 목록
-    with shelf_tab1:
-        reading_books = [b for b in st.session_state.my_books if b["status"] == "읽는 중"]
-        if not reading_books:
-            st.info("현재 읽고 있는 책이 없습니다. 사이드바에서 책을 추가해 보세요!")
-        else:
-            cols = st.columns(4)
-            for idx, book in enumerate(reading_books):
-                with cols[idx % 4]:
-                    with st.container(border=True):
-                        st.image(book["cover_url"], use_container_width=True)
-                        st.markdown(f"**{book['title']}**")
-                        st.caption(f"{book['author']}")
-                        if st.button("📝 기록", key=f"btn_r_{book['id']}", use_container_width=True):
-                            show_book_details(book)
+import streamlit as st
+import pandas as pd
+import datetime
+import calendar
+import html
+import requests
+from PIL import Image
+from io import BytesIO
 
-    # 서브 탭 2) 위시리스트 목록
-    with shelf_tab2:
-        wish_books = [b for b in st.session_state.my_books if b["status"] == "위시리스트"]
-        if not wish_books:
-            st.info("위시리스트에 담긴 책이 없습니다.")
-        else:
-            cols = st.columns(4)
-            for idx, book in enumerate(wish_books):
-                with cols[idx % 4]:
-                    with st.container(border=True):
-                        st.image(book["cover_url"], use_container_width=True)
-                        st.markdown(f"**{book['title']}**")
-                        st.caption(f"{book['author']}")
-                        if st.button("📝 기록", key=f"btn_w_{book['id']}", use_container_width=True):
-                            show_book_details(book)
+# -----------------------------------------------------------------------------
+# 1. 페이지 기본 설정 및 디자인 (CSS) 적용
+# -----------------------------------------------------------------------------
+# 웹브라우저 탭의 제목, 아이콘, 레이아웃을 설정합니다.
+st.set_page_config(
+    page_title="책 아지트",
+    page_icon="📚",
+    layout="wide"
+)
 
-    # 서브 탭 3) 독서 캘린더 (완독 시 해당 날짜에 책 표지 출력)
-    with shelf_tab3:
-        st.subheader("📅 완독 기록 캘린더")
-        
-        # 연도 및 월 선택
-        c_year_col, c_month_col = st.columns(2)
-        with c_year_col:
-            selected_year = st.selectbox("연도 선택", list(range(2026, 2036)), index=0)
-        with c_month_col:
-            selected_month = st.selectbox("월 선택", list(range(1, 13)), index=datetime.date.today().month - 1 if selected_year == 2026 else 0)
+# 나눔스퀘어라운드 폰트 적용 및 파스텔톤 스타일 정의
+st.markdown("""
+    <style>
+    @import url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_two@1.0/NanumSquareRound.woff');
 
-        # 선택된 월의 날짜 매트릭스 계산
-        month_calendar = calendar.monthcalendar(selected_year, selected_month)
-        week_days = ["일", "월", "화", "수", "목", "금", "토"]
-        
-        # 요일 헤더 표시
-        day_cols = st.columns(7)
-        for idx, day_name in enumerate(week_days):
-            day_cols[idx].markdown(f"**{day_name}**")
-            
-        # 완독된 책 데이터 매핑 (날짜 -> 책 정보)
-        completed_map = {}
-        for b in st.session_state.my_books:
-            if b.get("status") == "읽기 완료" and b.get("completed_date"):
-                completed_map[b["completed_date"]] = b
+    /* 전체 앱 기본 글꼴 설정 */
+    html, body, [class*="css"], div, span, label, input, button, textarea {
+        font-family: 'NanumSquareRound', sans-serif !important;
+    }
 
-        # 캘린더 화면 그리드 생성
-        for week in month_calendar:
-            w_cols = st.columns(7)
-            for idx, day in enumerate(week):
-                with w_cols[idx]:
-                    if day == 0:
-                        st.write("")
-                    else:
-                        date_str = f"{selected_year}-{selected_month:02d}-{day:02d}"
-                        
-                        # 해당 날짜에 완독한 책이 있으면 표지 이미지 출력
-                        if date_str in completed_map:
-                            matched_book = completed_map[date_str]
-                            st.markdown(f"""
-                                <div class="cal-day-box">
-                                    <div class="cal-day-num">{day}일 🎉</div>
-                                </div>
-                            """, unsafe_allow_html=True)
-                            st.image(matched_book["cover_url"], use_container_width=True)
-                        else:
-                            st.markdown(f"""
-                                <div class="cal-day-box">
-                                    <div class="cal-day-num">{day}</div>
-                                </div>
-                            """, unsafe_allow_html=True)
+    /* 메인 타이틀 스타일 */
+    .luxury-title {
+        font-family: 'NanumSquareRound', sans-serif !important;
+        font-size: 2.3rem !important;
+        font-weight: 800 !important;
+        color: #4A3E3D !important;
+        margin-bottom: 0px !important;
+    }
 
-    # 서브 탭 4) 완독 도서 별점 모아보기
-    with shelf_tab4:
-        st.subheader("⭐ 완독 도서 평점 모아보기")
-        completed_books = [b for b in st.session_state.my_books if b["status"] == "읽기 완료"]
-        if not completed_books:
-            st.info("아직 완독한 책이 없습니다.")
-        else:
-            # 평점이 높은 순으로 정렬하여 표시
-            completed_books.sort(key=lambda x: x.get("rating", 0), reverse=True)
-            cols = st.columns(4)
-            for idx, book in enumerate(completed_books):
-                with cols[idx % 4]:
-                    with st.container(border=True):
-                        st.image(book["cover_url"], use_container_width=True)
-                        st.markdown(f"**{book['title']}**")
-                        st.caption(render_star_rating(book.get("rating", 5.0)))
-                        if st.button("📝 기록", key=f"btn_c_{book['id']}", use_container_width=True):
-                            show_book_details(book)
+    /* 사이드바 프로필 상자 그라데이션 및 디자인 */
+    [data-testid="stSidebar"] div[data-testid="stVerticalBlockBorderWrapper"]:first-of-type > div {
+        background: linear-gradient(135deg, #FFE4E6 0%, #F3E8FF 50%, #E0E7FF 100%) !important;
+        border-radius: 20px !important;
+        border: 1px solid #F3D2DF !important;
+        padding: 18px !important;
+        box-shadow: 0 4px 15px rgba(243, 210, 223, 0.4) !important;
+    }
 
-    # 서브 탭 5) 완독할 때마다 모이는 나만의 인장 컬렉션
-    with shelf_tab5:
-        st.subheader("🏅 나의 완독 인장 컬렉션")
-        completed_books_for_stamps = sorted(
-            [b for b in st.session_state.my_books if b.get("status") == "읽기 완료"],
-            key=lambda b: int(b.get("stamp_number", 9999)),
-        )
+    /* 모든 버튼의 모서리를 둥글게 설정 */
+    div.stButton > button {
+        border-radius: 14px !important;
+        font-weight: bold !important;
+        border: none !important;
+        transition: all 0.2s ease-in-out;
+    }
+    div.stButton > button:hover {
+        transform: translateY(-1px);
+    }
 
-        if not completed_books_for_stamps:
-            st.info("아직 모은 인장이 없습니다. 첫 번째 책을 완독하고 나만의 인장을 받아 보세요!")
-            st.write("책을 끝까지 읽을 때마다 완독 날짜와 수집 번호가 담긴 인장이 이곳에 쌓입니다.")
-        else:
-            st.write(f"지금까지 **{len(completed_books_for_stamps)}개**의 인장을 모았어요. 한 권씩 완독하며 컬렉션을 채워 보세요!")
-            stamp_cols = st.columns(3)
-            for idx, book in enumerate(completed_books_for_stamps):
-                with stamp_cols[idx % 3]:
-                    with st.container(border=True):
-                        st.markdown(render_completion_stamp(book, compact=True), unsafe_allow_html=True)
-                        safe_title = html.escape(str(book.get("title", "제목 없음")))
-                        st.markdown(f"**{safe_title}**", unsafe_allow_html=True)
-                        st.caption(f"{book.get('stamp_number', idx + 1)}번 인장 · {book.get('stamp_label', '완독 인증')}")
+    /* 입력창 모서리 둥글게 설정 */
+    div[data-baseweb="input"], div[data-baseweb="select"], div[data-baseweb="textarea"] {
+        border-radius: 14px !important;
+    }
+    input, textarea {
+        border-radius: 14px !important;
+    }
+
+    /* 카드형 컨테이너 모서리 둥글게 설정 */
+    [data-testid="stForm"], div[data-testid="stVerticalBlockBorderWrapper"] > div {
+        border-radius: 20px !important;
+    }
+
+    /* 상단 페이지 전환 탭 스타일 */
+    button[data-baseweb="tab"] {
+        border-radius: 16px 16px 0 0 !important;
+        font-size: 1.2rem !important;
+        font-weight: bold !important;
+        padding: 12px 24px !important;
+    }
+
+    /* 이미지 모서리 둥글게 설정 */
+    img {
+        border-radius: 14px !important;
+    }
+
+    /* 캘린더 날짜 상자 스타일 */
+    .cal-day-box {
+        background-color: #F8F9FA;
+        border-radius: 12px;
+        padding: 6px;
+        min-height: 110px;
+        border: 1px solid #E9ECEF;
+    }
+    .cal-day-num {
+        font-weight: bold;
+        font-size: 0.9rem;
+        color: #495057;
