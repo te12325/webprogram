@@ -125,3 +125,4 @@ with page_tab3:
             count = sum(1 for b in completed_for_analysis if (b.get("genre", "미분류") or "미분류") == genre_name)
             st.write(f"**{genre_name}** — {count}권 · {ratio_value:.1f}%")
             st.progress(min(ratio_value / 100, 1.0))
+
