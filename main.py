@@ -1,96 +1,127 @@
-import streamlit as st
-import pandas as pd
-import datetime
-import calendar
-import requests
-from PIL import Image
-from io import BytesIO
 
-# -----------------------------------------------------------------------------
-# 1. 페이지 기본 설정 및 디자인 (CSS) 적용
-# -----------------------------------------------------------------------------
-# 웹브라우저 탭의 제목, 아이콘, 레이아웃을 설정합니다.
-st.set_page_config(
-    page_title="책 아지트",
-    page_icon="📚",
-    layout="wide"
-)
+    # 서브 탭 3) 독서 캘린더 (완독 시 해당 날짜에 책 표지 출력)
+    with shelf_tab3:
+        st.subheader("📅 완독 기록 캘린더")
+        
+        # 연도 및 월 선택
+        c_year_col, c_month_col = st.columns(2)
+        with c_year_col:
+            selected_year = st.selectbox("연도 선택", list(range(2026, 2036)), index=0)
+        with c_month_col:
+            selected_month = st.selectbox("월 선택", list(range(1, 13)), index=datetime.date.today().month - 1 if selected_year == 2026 else 0)
 
-# 나눔스퀘어라운드 폰트 적용 및 파스텔톤 스타일 정의
-st.markdown("""
-    <style>
-    @import url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_two@1.0/NanumSquareRound.woff');
+        # 선택된 월의 날짜 매트릭스 계산
+        month_calendar = calendar.monthcalendar(selected_year, selected_month)
+        week_days = ["일", "월", "화", "수", "목", "금", "토"]
+        
+        # 요일 헤더 표시
+        day_cols = st.columns(7)
+        for idx, day_name in enumerate(week_days):
+            day_cols[idx].markdown(f"**{day_name}**")
+            
+        # 완독된 책 데이터 매핑 (날짜 -> 책 정보)
+        completed_map = {}
+        for b in st.session_state.my_books:
+            if b.get("status") == "읽기 완료" and b.get("completed_date"):
+                completed_map[b["completed_date"]] = b
 
-    /* 전체 앱 기본 글꼴 설정 */
-    html, body, [class*="css"], div, span, label, input, button, textarea {
-        font-family: 'NanumSquareRound', sans-serif !important;
-    }
+        # 캘린더 화면 그리드 생성
+        for week in month_calendar:
+            w_cols = st.columns(7)
+            for idx, day in enumerate(week):
+                with w_cols[idx]:
+                    if day == 0:
+                        st.write("")
+                    else:
+                        date_str = f"{selected_year}-{selected_month:02d}-{day:02d}"
+                        
+                        # 해당 날짜에 완독한 책이 있으면 표지 이미지 출력
+                        if date_str in completed_map:
+                            matched_book = completed_map[date_str]
+                            st.markdown(f"""
+                                <div class="cal-day-box">
+                                    <div class="cal-day-num">{day}일 🎉</div>
+                                </div>
+                            """, unsafe_allow_html=True)
+                            st.image(matched_book["cover_url"], use_container_width=True)
+                        else:
+                            st.markdown(f"""
+                                <div class="cal-day-box">
+                                    <div class="cal-day-num">{day}</div>
+                                </div>
+                            """, unsafe_allow_html=True)
 
-    /* 메인 타이틀 스타일 */
-    .luxury-title {
-        font-family: 'NanumSquareRound', sans-serif !important;
-        font-size: 2.3rem !important;
-        font-weight: 800 !important;
-        color: #4A3E3D !important;
-        margin-bottom: 0px !important;
-    }
+    # 서브 탭 4) 완독 도서 별점 모아보기
+    with shelf_tab4:
+        st.subheader("⭐ 완독 도서 평점 모아보기")
+        completed_books = [b for b in st.session_state.my_books if b["status"] == "읽기 완료"]
+        if not completed_books:
+            st.info("아직 완독한 책이 없습니다.")
+        else:
+            # 평점이 높은 순으로 정렬하여 표시
+            completed_books.sort(key=lambda x: x.get("rating", 0), reverse=True)
+            cols = st.columns(4)
+            for idx, book in enumerate(completed_books):
+                with cols[idx % 4]:
+                    with st.container(border=True):
+                        st.image(book["cover_url"], use_container_width=True)
+                        st.markdown(f"**{book['title']}**")
+                        st.caption(render_star_rating(book.get("rating", 5.0)))
+                        if st.button("📝 기록", key=f"btn_c_{book['id']}", use_container_width=True):
+                            show_book_details(book)
 
-    /* 사이드바 프로필 상자 그라데이션 및 디자인 */
-    [data-testid="stSidebar"] div[data-testid="stVerticalBlockBorderWrapper"]:first-of-type > div {
-        background: linear-gradient(135deg, #FFE4E6 0%, #F3E8FF 50%, #E0E7FF 100%) !important;
-        border-radius: 20px !important;
-        border: 1px solid #F3D2DF !important;
-        padding: 18px !important;
-        box-shadow: 0 4px 15px rgba(243, 210, 223, 0.4) !important;
-    }
+# =============================================================================
+# TAB 3: 독서 성향 MBTI - 완독 도서의 장르 비율 분석
+# =============================================================================
+with page_tab3:
+    st.subheader("🧠 나의 독서 성향 MBTI")
+    st.write("완독한 책의 장르 비율을 분석해 나만의 독서 유형을 알려드려요.")
+    st.caption("진단은 재미를 위한 참고 정보예요. 장르가 등록된 완독 도서가 많을수록 결과가 더 정확해집니다.")
 
-    /* 모든 버튼의 모서리를 둥글게 설정 */
-    div.stButton > button {
-        border-radius: 14px !important;
-        font-weight: bold !important;
-        border: none !important;
-        transition: all 0.2s ease-in-out;
-    }
-    div.stButton > button:hover {
-        transform: translateY(-1px);
-    }
+    completed_for_analysis = [
+        b for b in st.session_state.my_books
+        if b.get("status") == "읽기 완료"
+    ]
 
-    /* 입력창 모서리 둥글게 설정 */
-    div[data-baseweb="input"], div[data-baseweb="select"], div[data-baseweb="textarea"] {
-        border-radius: 14px !important;
-    }
-    input, textarea {
-        border-radius: 14px !important;
-    }
+    if not completed_for_analysis:
+        st.info("아직 완독한 책이 없어요. 책을 완독으로 기록하면 독서 성향 분석이 시작됩니다!")
+        st.write("💡 팁: 책을 등록할 때 장르를 선택하거나, 기존 책의 📝 기록 화면에서 장르를 지정해 주세요.")
+    else:
+        ratios, personality, message, personality_emoji = get_reading_personality(completed_for_analysis)
+        st.markdown(
+            f"""
+            <div style="background: linear-gradient(135deg, #FFE4E6 0%, #F3E8FF 52%, #E0E7FF 100%);
+                        border: 1px solid #F3D2DF; border-radius: 22px; padding: 26px;
+                        text-align: center; margin: 10px 0 22px 0;">
+                <div style="font-size: 3rem;">{personality_emoji}</div>
+                <div style="font-size: 1.65rem; font-weight: 800; color: #4A3E3D;">{personality}</div>
+                <div style="font-size: 1rem; color: #5D5050; margin-top: 10px;">{message}</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
-    /* 카드형 컨테이너 모서리 둥글게 설정 */
-    [data-testid="stForm"], div[data-testid="stVerticalBlockBorderWrapper"] > div {
-        border-radius: 20px !important;
-    }
+        genre_col, stat_col = st.columns([3, 2])
+        with genre_col:
+            st.markdown("#### 📊 장르별 독서 비율")
+            if ratios:
+                ratio_df = pd.DataFrame({
+                    "장르": list(ratios.keys()),
+                    "비율(%)": [round(value, 1) for value in ratios.values()]
+                }).set_index("장르")
+                st.bar_chart(ratio_df, y="비율(%)")
+                st.caption("비율은 완독한 도서의 권수를 기준으로 계산합니다.")
+        with stat_col:
+            st.markdown("#### 📚 분석 요약")
+            st.metric("분석한 완독 도서", f"{len(completed_for_analysis)}권")
+            if ratios:
+                dominant = max(ratios, key=ratios.get)
+                st.metric("가장 많이 읽은 장르", dominant)
+                st.metric("해당 장르 비율", f"{ratios[dominant]:.1f}%")
 
-    /* 상단 페이지 전환 탭 스타일 */
-    button[data-baseweb="tab"] {
-        border-radius: 16px 16px 0 0 !important;
-        font-size: 1.2rem !important;
-        font-weight: bold !important;
-        padding: 12px 24px !important;
-    }
-
-    /* 이미지 모서리 둥글게 설정 */
-    img {
-        border-radius: 14px !important;
-    }
-
-    /* 캘린더 날짜 상자 스타일 */
-    .cal-day-box {
-        background-color: #F8F9FA;
-        border-radius: 12px;
-        padding: 6px;
-        min-height: 110px;
-        border: 1px solid #E9ECEF;
-    }
-    .cal-day-num {
-        font-weight: bold;
-        font-size: 0.9rem;
-        color: #495057;
-        margin-bottom: 4px;
+        st.markdown("#### 🗂️ 장르별 기록")
+        genre_rows = sorted(ratios.items(), key=lambda item: item[1], reverse=True)
+        for genre_name, ratio_value in genre_rows:
+            count = sum(1 for b in completed_for_analysis if (b.get("genre", "미분류") or "미분류") == genre_name)
+            st.write(f"**{genre_name}** — {count}권 · {ratio_value:.1f}%")
+            st.progress(min(ratio_value / 100, 1.0))
