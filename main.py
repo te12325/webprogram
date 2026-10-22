@@ -126,4 +126,3 @@
                         safe_title = html.escape(str(book.get("title", "제목 없음")))
                         st.markdown(f"**{safe_title}**", unsafe_allow_html=True)
                         st.caption(f"{book.get('stamp_number', idx + 1)}번 인장 · {book.get('stamp_label', '완독 인증')}")
-                    
