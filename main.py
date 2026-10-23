@@ -1,3 +1,15 @@
+
+
+콘텐츠로 건너뛰기
+스크린 리더로 Gmail 사용하기
+441개 중 2개
+프로그래밍 일단 거의 완성 코드
+받은편지함
+
+김태은 <taeeun12325@gmail.com>
+2026. 10. 22. 오전 10:43 (1일 전)
+나에게
+
 import streamlit as st
 import pandas as pd
 import datetime
@@ -94,7 +106,7 @@ st.markdown("""
         font-size: 0.9rem;
         color: #495057;
         margin-bottom: 4px;
-            }
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -115,11 +127,8 @@ if "user_name" not in st.session_state:
 if "profile_image" not in st.session_state:
     st.session_state.profile_image = None  # 사용자 프로필 이미지 바이너리 데이터
 
-# 카카오 도서 검색 API 키: Streamlit Community Cloud의 Settings → Secrets에서 설정
-try:
-    KAKAO_API_KEY = st.secrets["KAKAO_API_KEY"]
-except (KeyError, FileNotFoundError):
-    KAKAO_API_KEY = ""
+# 카카오 도서 검색 API 키 (필요 시 발급받은 REST API 키 문자열 입력)
+KAKAO_API_KEY = ""
 
 
 # -----------------------------------------------------------------------------
@@ -162,49 +171,36 @@ if not st.session_state.user_name:
 # -----------------------------------------------------------------------------
 
 # 카카오 도서 검색 API 호출 함수
-@st.cache_data(ttl=600)
 def search_book_kakao(query):
-    """카카오 API에서 실제 도서 정보와 표지 이미지 주소를 검색합니다."""
+    """책 제목으로 검색하여 도서 목록 및 표지 이미지 URL을 가져옵니다."""
     if not KAKAO_API_KEY:
-        st.warning(
-            "카카오 API 키가 설정되지 않았어요. "
-            "Streamlit Cloud의 Settings → Secrets를 확인해 주세요."
-        )
-        return []
-
-    url = "https://dapi.kakao.com/v3/search/book"
+        # API 키가 설정되지 않은 경우 샘플 데이터를 반환합니다.
+        return [{
+            "title": query,
+            "authors": ["작자 미상"],
+            "thumbnail": "https://via.placeholder.com/150x200.png?text=No+Cover",
+            "total_pages": 300
+        }]
+   
+    url = f"https://dapi.kakao.com/v3/search/book?query={query}"
     headers = {"Authorization": f"KakaoAK {KAKAO_API_KEY}"}
-    params = {"query": query, "size": 10}
-
+   
     try:
-        response = requests.get(
-            url,
-            headers=headers,
-            params=params,
-            timeout=10
-        )
-        response.raise_for_status()
-
-        results = response.json().get("documents", [])
-        books = []
-        for item in results:
-            books.append({
-                "title": item.get("title", "제목 없음"),
-                "authors": item.get("authors", []) or ["저자 미상"],
-                "thumbnail": (
-                    item.get("thumbnail")
-                    or "https://via.placeholder.com/150x200.png?text=No+Cover"
-                ),
-                "total_pages": 300  # 기본 페이지 수 (사용자가 수정 가능)
-            })
-        return books
-        
-    except requests.RequestException as e:
+        response = requests.get(url, headers=headers)
+        if response.status_code == 200:
+            results = response.json().get("documents", [])
+            books = []
+            for item in results:
+                books.append({
+                    "title": item.get("title", "제목 없음"),
+                    "authors": item.get("authors", ["저자 미상"]),
+                    "thumbnail": item.get("thumbnail", "https://via.placeholder.com/150x200.png?text=No+Cover"),
+                    "total_pages": 300  # 기본 페이지 수 지정 (사용자가 수정 가능)
+                })
+            return books
+    except Exception as e:
         st.error(f"도서 검색 중 오류가 발생했습니다: {e}")
-        return []
-    except (ValueError, TypeError) as e:
-        st.error(f"도서 검색 결과를 읽는 중 오류가 발생했습니다: {e}")
-        return []
+    return []
 
 # 하루 독서 권장 분량 계산 함수 (목표일 기준 자동 분량 조절)
 def calculate_daily_pages(total_pages, read_pages, target_date):
@@ -398,6 +394,22 @@ page_tab1, page_tab2 = st.tabs([f"👤 {st.session_state.user_name}의 아지트
 # TAB 1: (사용자의 이름)의 아지트 메인 대시보드
 # =============================================================================
 with page_tab1:
+    with st.container(border=True):
+        col1, col2 = st.columns([1, 4])
+       
+        # 프로필 이미지 표시
+        with col1:
+            if st.session_state.profile_image:
+                image = Image.open(BytesIO(st.session_state.profile_image))
+                st.image(image, width=130)
+            else:
+                st.markdown("""
+                    <div style="font-size: 80px; text-align: center; background-color: #F3E8FF; border-radius: 50%; width: 120px; height: 120px; line-height: 120px;">
+                        👤
+                    </div>
+                """, unsafe_allow_html=True)
+               
+        # 환영 인사 및 전체 현황 지표(Metric) 표시
         with col2:
             st.markdown(f'<div class="luxury-title">📚 {st.session_state.user_name}의 아지트</div>', unsafe_allow_html=True)
             st.write("나만의 독서 목표와 기록을 차곡차곡 쌓아가는 공간입니다.")
@@ -482,7 +494,7 @@ with page_tab2:
                 with w_cols[idx]:
                     if day == 0:
                         st.write("")
-                            else:
+                    else:
                         date_str = f"{selected_year}-{selected_month:02d}-{day:02d}"
                        
                         # 해당 날짜에 완독한 책이 있으면 표지 이미지 출력
