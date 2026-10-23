@@ -519,3 +519,10 @@ with page_tab2:
                         st.caption(render_star_rating(book.get("rating", 5.0)))
                         if st.button("📝 기록", key=f"btn_c_{book['id']}", use_container_width=True):
                             show_book_details(book)
+
+
+# 카카오 도서 검색 API 키를 Streamlit Secrets에서 불러오기
+try:
+    KAKAO_API_KEY = st.secrets["KAKAO_API_KEY"]
+except (KeyError, FileNotFoundError):
+    KAKAO_API_KEY = ""
