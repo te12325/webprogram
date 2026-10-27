@@ -240,22 +240,31 @@ with st.sidebar:
                 submit_button = st.form_submit_button("내 책장에 추가")
                 
                 if submit_button:
-                    today_str = datetime.date.today().strftime("%Y-%m-%d")
-                    new_book = {
-                        "id": len(st.session_state.my_books) + 1,
-                        "title": selected_book["title"],
-                        "author": ", ".join(selected_book["authors"]),
-                        "cover_url": selected_book["thumbnail"],
-                        "total_pages": total_pages,
-                        "current_page": total_pages if status == "읽기 완료" else 0,
-                        "target_date": target_date,
-                        "status": status,
-                        "rating": initial_rating if status == "읽기 완료" else 0.0,
-                        "notes": "",
-                        "completed_date": today_str if status == "읽기 완료" else None
-                    }
-                    st.session_state.my_books.append(new_book)
-                    st.success(f"'{selected_book['title']}' 책이 저장소에 추가되었습니다!")
+                    # 동일한 책 제목과 동일한 상태(위치)가 이미 존재하는지 검사
+                    is_duplicate = any(
+                        b["title"] == selected_book["title"] and b["status"] == status
+                        for b in st.session_state.my_books
+                    )
+                    
+                    if is_duplicate:
+                        st.warning(f"⚠️ 이미 [{status}]에 추가된 책입니다!")
+                    else:
+                        today_str = datetime.date.today().strftime("%Y-%m-%d")
+                        new_book = {
+                            "id": len(st.session_state.my_books) + 1,
+                            "title": selected_book["title"],
+                            "author": ", ".join(selected_book["authors"]),
+                            "cover_url": selected_book["thumbnail"],
+                            "total_pages": total_pages,
+                            "current_page": total_pages if status == "읽기 완료" else 0,
+                            "target_date": target_date,
+                            "status": status,
+                            "rating": initial_rating if status == "읽기 완료" else 0.0,
+                            "notes": "",
+                            "completed_date": today_str if status == "읽기 완료" else None
+                        }
+                        st.session_state.my_books.append(new_book)
+                        st.success(f"'{selected_book['title']}' 책이 저장소에 추가되었습니다!")
         else:
             st.warning("검색 결과가 없습니다.")
 
