@@ -185,20 +185,6 @@ def search_book_kakao(query):
         st.error(f"도서 검색 중 오류가 발생했습니다: {e}")
     return []
 
-def calculate_daily_pages(total_pages, read_pages, target_date):
-    today = datetime.date.today()
-    remaining_days = (target_date - today).days
-    remaining_pages = total_pages - read_pages
-
-    if remaining_pages <= 0:
-        return 0, 0, "목표 달성!"
-    
-    if remaining_days <= 0:
-        return remaining_pages, 0, "목표일이 지났거나 오늘이 목표일입니다."
-
-    daily_pages = -(-remaining_pages // remaining_days)
-    return remaining_pages, remaining_days, daily_pages
-
 def render_star_rating(rating):
     full_stars = int(rating)
     has_half = (rating - full_stars) >= 0.5
@@ -287,17 +273,8 @@ def show_book_details(book):
     RATING_OPTIONS = [i / 2 for i in range(1, 11)]
 
     if book["status"] == "읽는 중":
-        rem_pages, rem_days, daily_target = calculate_daily_pages(
-            book["total_pages"], book["current_page"], book["target_date"]
-        )
         progress = min(book["current_page"] / book["total_pages"], 1.0)
         st.progress(progress, text=f"진행률: {int(progress * 100)}%")
-        
-        st.metric(
-            label="Today 목표 (오늘 읽을 분량)", 
-            value=f"{daily_target} 페이지/일",
-            delta=f"남은 날: {rem_days}일"
-        )
         
         new_page = st.number_input(
             "현재 읽은 페이지 입력", 
