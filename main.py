@@ -102,22 +102,22 @@ st.markdown("""
 # 2. 세션 상태(Session State) 초기화 및 API 키 불러오기
 # -----------------------------------------------------------------------------
 if "my_books" not in st.session_state:
-    st.session_state.my_books = []  # 등록된 책 목록 저장용 리스트
+    st.session_state.my_books = []
 
 if "active_book_id" not in st.session_state:
-    st.session_state.active_book_id = None  # 현재 선택된 책 ID
+    st.session_state.active_book_id = None
 
 if "user_name" not in st.session_state:
-    st.session_state.user_name = ""  # 사용자 이름/닉네임
+    st.session_state.user_name = ""
 
 if "profile_image" not in st.session_state:
-    st.session_state.profile_image = None  # 사용자 프로필 이미지 바이너리 데이터
+    st.session_state.profile_image = None
 
-# Streamlit Secrets에서 카카오 API 키 안전하게 가져오기 (로컬 테스트 시 에러 방지용 예외처리)
+# Streamlit Secrets에서 카카오 API 키 안전하게 가져오기
 try:
     KAKAO_API_KEY = st.secrets["KAKAO_API_KEY"]
 except (KeyError, FileNotFoundError):
-    KAKAO_API_KEY = ""  # 키가 없을 경우 빈 값
+    KAKAO_API_KEY = ""
 
 
 # -----------------------------------------------------------------------------
@@ -155,11 +155,9 @@ if not st.session_state.user_name:
 # 4. 유틸리티 함수 정의
 # -----------------------------------------------------------------------------
 
-# 카카오 도서 검색 API 호출 함수 (실제 책 표지 및 정보 연동)
 def search_book_kakao(query):
     """카카오 API를 통해 책 제목으로 검색하고 실제 표지 이미지와 데이터를 가져옵니다."""
     if not KAKAO_API_KEY:
-        # API 키가 설정되지 않은 경우 안내용 샘플 반환
         return [{
             "title": f"[API키 미설정] {query}",
             "authors": ["설정 확인 필요"],
@@ -176,19 +174,17 @@ def search_book_kakao(query):
             results = response.json().get("documents", [])
             books = []
             for item in results:
-                # 카카오 API 응답 데이터 매핑
                 books.append({
                     "title": item.get("title", "제목 없음"),
                     "authors": item.get("authors", ["저자 미상"]),
                     "thumbnail": item.get("thumbnail", "https://via.placeholder.com/150x200.png?text=No+Cover"),
-                    "total_pages": 300  # 기본 페이지 수 (사용자가 등록 시 수정 가능)
+                    "total_pages": 300
                 })
             return books
     except Exception as e:
         st.error(f"도서 검색 중 오류가 발생했습니다: {e}")
     return []
 
-# 하루 독서 권장 분량 계산 함수
 def calculate_daily_pages(total_pages, read_pages, target_date):
     today = datetime.date.today()
     remaining_days = (target_date - today).days
@@ -203,7 +199,6 @@ def calculate_daily_pages(total_pages, read_pages, target_date):
     daily_pages = -(-remaining_pages // remaining_days)
     return remaining_pages, remaining_days, daily_pages
 
-# 별점 시각화 함수
 def render_star_rating(rating):
     full_stars = int(rating)
     has_half = (rating - full_stars) >= 0.5
@@ -264,7 +259,7 @@ with st.sidebar:
                         "id": len(st.session_state.my_books) + 1,
                         "title": selected_book["title"],
                         "author": ", ".join(selected_book["authors"]),
-                        "cover_url": selected_book["thumbnail"],  # 카카오 API에서 가져온 실제 표지 이미지 URL
+                        "cover_url": selected_book["thumbnail"],
                         "total_pages": total_pages,
                         "current_page": total_pages if status == "읽기 완료" else 0,
                         "target_date": target_date,
@@ -348,4 +343,48 @@ def show_book_details(book):
         label_visibility="collapsed",
         value=book.get("notes", ""),
         height=120,
-        key=f"modal
+        key=f"modal_note_{book['id']}"
+    )
+    if st.button("인용구 저장", key=f"modal_save_note_{book['id']}"):
+        book["notes"] = note_text
+        st.success("저장되었습니다!")
+        st.rerun()
+
+
+# -----------------------------------------------------------------------------
+# 7. 메인 화면 탭 구역 (1. 프로필 아지트 / 2. 내 책장)
+# -----------------------------------------------------------------------------
+page_tab1, page_tab2 = st.tabs([f"👤 {st.session_state.user_name}의 아지트", "📚 내 책장"])
+
+with page_tab1:
+    with st.container(border=True):
+        col1, col2 = st.columns([1, 4])
+        
+        with col1:
+            if st.session_state.profile_image:
+                image = Image.open(BytesIO(st.session_state.profile_image))
+                st.image(image, width=130)
+            else:
+                st.markdown("""
+                    <div style="font-size: 80px; text-align: center; background-color: #F3E8FF; border-radius: 50%; width: 120px; height: 120px; line-height: 120px;">
+                        👤
+                    </div>
+                """, unsafe_allow_html=True)
+                
+        with col2:
+            st.markdown(f'<div class="luxury-title">📚 {st.session_state.user_name}의 아지트</div>', unsafe_allow_html=True)
+            st.write("나만의 독서 목표와 기록을 차곡차곡 쌓아가는 공간입니다.")
+            
+            total_b = len(st.session_state.my_books)
+            reading_b = len([b for b in st.session_state.my_books if b['status'] == '읽는 중'])
+            completed_b = len([b for b in st.session_state.my_books if b['status'] == '읽기 완료'])
+            
+            m1, m2, m3 = st.columns(3)
+            m1.metric("총 등록 도서", f"{total_b}권")
+            m2.metric("현재 읽는 중", f"{reading_b}권")
+            m3.metric("완독한 도서", f"{completed_b}권")
+
+with page_tab2:
+    shelf_tab1, shelf_tab2, shelf_tab3, shelf_tab4 = st.tabs(["📖 읽는 중", "📌 위시리스트", "📅 캘린더", "⭐ 평점"])
+    
+    with
