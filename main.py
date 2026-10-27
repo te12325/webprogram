@@ -362,29 +362,4 @@ with page_tab1:
         
         with col1:
             if st.session_state.profile_image:
-                image = Image.open(BytesIO(st.session_state.profile_image))
-                st.image(image, width=130)
-            else:
-                st.markdown("""
-                    <div style="font-size: 80px; text-align: center; background-color: #F3E8FF; border-radius: 50%; width: 120px; height: 120px; line-height: 120px;">
-                        👤
-                    </div>
-                """, unsafe_allow_html=True)
-                
-        with col2:
-            st.markdown(f'<div class="luxury-title">📚 {st.session_state.user_name}의 아지트</div>', unsafe_allow_html=True)
-            st.write("나만의 독서 목표와 기록을 차곡차곡 쌓아가는 공간입니다.")
-            
-            total_b = len(st.session_state.my_books)
-            reading_b = len([b for b in st.session_state.my_books if b['status'] == '읽는 중'])
-            completed_b = len([b for b in st.session_state.my_books if b['status'] == '읽기 완료'])
-            
-            m1, m2, m3 = st.columns(3)
-            m1.metric("총 등록 도서", f"{total_b}권")
-            m2.metric("현재 읽는 중", f"{reading_b}권")
-            m3.metric("완독한 도서", f"{completed_b}권")
-
-with page_tab2:
-    shelf_tab1, shelf_tab2, shelf_tab3, shelf_tab4 = st.tabs(["📖 읽는 중", "📌 위시리스트", "📅 캘린더", "⭐ 평점"])
-    
-    with
+                image = Image.open(BytesIO(st.
