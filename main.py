@@ -41,7 +41,6 @@ st.markdown("""
         box-shadow: 0 4px 15px rgba(243, 210, 223, 0.4) !important;
     }
 
-    /* 책장 카드 컨테이너 내부 여백을 좁게 주어 표지와 테두리를 딱 맞춤 */
     [data-testid="stVerticalBlockBorderWrapper"] > div {
         border-radius: 14px !important;
         padding: 10px !important;
@@ -84,16 +83,17 @@ st.markdown("""
 
     .cal-day-box {
         background-color: #F8F9FA;
-        border-radius: 12px;
-        padding: 6px;
-        min-height: 120px;
+        border-radius: 10px;
+        padding: 4px;
+        min-height: 130px;
         border: 1px solid #E9ECEF;
+        text-align: center;
     }
     .cal-day-num {
         font-weight: bold;
-        font-size: 0.9rem;
+        font-size: 0.85rem;
         color: #495057;
-        margin-bottom: 4px;
+        margin-bottom: 2px;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -570,7 +570,7 @@ with page_tab1:
 with page_tab2:
     shelf_tab1, shelf_tab2, shelf_tab3, shelf_tab4 = st.tabs(["📖 읽는 중", "📌 위시리스트", "📅 캘린더", "⭐ 평점"])
     
-    # 1) 읽는 중 (표지 폭 95px에 맞춰 컨테이너 및 텍스트·버튼 정렬)
+    # 1) 읽는 중
     with shelf_tab1:
         reading_books = [b for b in st.session_state.my_books if b["status"] == "읽는 중"]
         if not reading_books:
@@ -586,7 +586,7 @@ with page_tab2:
                         if st.button("📝 기록", key=f"btn_r_{book['id']}", use_container_width=True):
                             show_book_details(book)
 
-    # 2) 위시리스트 (표지 폭 95px에 맞춰 컨테이너 및 텍스트·버튼 정렬)
+    # 2) 위시리스트
     with shelf_tab2:
         wish_books = [b for b in st.session_state.my_books if b["status"] == "위시리스트"]
         if not wish_books:
@@ -602,6 +602,7 @@ with page_tab2:
                         if st.button("📝 기록", key=f"btn_w_{book['id']}", use_container_width=True):
                             show_book_details(book)
 
+    # 3) 캘린더 (완독한 책 표지 크기를 테두리 안에 쏙 들어가도록 width=55 적용)
     with shelf_tab3:
         st.subheader("📅 완독 기록 캘린더")
         
@@ -639,7 +640,7 @@ with page_tab2:
                                     <div class="cal-day-num">{day}일 🎉</div>
                                 </div>
                             """, unsafe_allow_html=True)
-                            st.image(matched_book["cover_url"], use_container_width=True)
+                            st.image(matched_book["cover_url"], width=55)
                         else:
                             st.markdown(f"""
                                 <div class="cal-day-box">
@@ -658,7 +659,7 @@ with page_tab2:
             for idx, book in enumerate(completed_books):
                 with cols[idx % 4]:
                     with st.container(border=True):
-                        st.image(book["cover_url"], use_container_width=True)
+                        st.image(book["cover_url"], width=100)
                         st.markdown(f"**{book['title']}**")
                         st.caption(render_star_rating(book.get("rating", 5.0)))
                         if st.button("📝 기록", key=f"btn_c_{book['id']}", use_container_width=True):
