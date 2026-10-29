@@ -224,7 +224,7 @@ if not st.session_state.user_name:
             
             # 2) 회원가입 탭
             with auth_tab2:
-                st.write("새로운 계정을 만드세요 (깃허브에 저장됩니다).")
+                st.write("새로운 계정을 만드세요.")
                 reg_id = st.text_input("사용할 아이디", key="reg_id")
                 
                 reg_pw_col1, reg_pw_col2 = st.columns([4, 1])
