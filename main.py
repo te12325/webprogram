@@ -5,6 +5,8 @@ import calendar
 import requests
 from PIL import Image
 from io import BytesIO
+import base64
+from github import Github, GithubException
 
 # -----------------------------------------------------------------------------
 # 1. 페이지 기본 설정 및 디자인 (CSS) 적용
@@ -15,17 +17,14 @@ st.set_page_config(
     layout="wide"
 )
 
-# 나눔스퀘어라운드 폰트 적용 및 파스텔톤 스타일 정의
 st.markdown("""
     <style>
     @import url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_two@1.0/NanumSquareRound.woff');
 
-    /* 전체 앱 기본 글꼴 설정 */
     html, body, [class*="css"], div, span, label, input, button, textarea {
         font-family: 'NanumSquareRound', sans-serif !important;
     }
 
-    /* 메인 타이틀 스타일 */
     .luxury-title {
         font-family: 'NanumSquareRound', sans-serif !important;
         font-size: 2.3rem !important;
@@ -34,7 +33,6 @@ st.markdown("""
         margin-bottom: 0px !important;
     }
 
-    /* 사이드바 프로필 상자 그라데이션 및 디자인 */
     [data-testid="stSidebar"] div[data-testid="stVerticalBlockBorderWrapper"]:first-of-type > div {
         background: linear-gradient(135deg, #FFE4E6 0%, #F3E8FF 50%, #E0E7FF 100%) !important;
         border-radius: 20px !important;
@@ -43,7 +41,6 @@ st.markdown("""
         box-shadow: 0 4px 15px rgba(243, 210, 223, 0.4) !important;
     }
 
-    /* 모든 버튼의 모서리를 둥글게 설정 */
     div.stButton > button {
         border-radius: 14px !important;
         font-weight: bold !important;
@@ -54,7 +51,6 @@ st.markdown("""
         transform: translateY(-1px);
     }
 
-    /* 입력창 모서리 둥글게 설정 */
     div[data-baseweb="input"], div[data-baseweb="select"], div[data-baseweb="textarea"] {
         border-radius: 14px !important;
     }
@@ -62,12 +58,10 @@ st.markdown("""
         border-radius: 14px !important;
     }
 
-    /* 카드형 컨테이너 모서리 둥글게 설정 */
     [data-testid="stForm"], div[data-testid="stVerticalBlockBorderWrapper"] > div {
         border-radius: 20px !important;
     }
 
-    /* 상단 페이지 전환 탭 스타일 */
     button[data-baseweb="tab"] {
         border-radius: 16px 16px 0 0 !important;
         font-size: 1.2rem !important;
@@ -75,17 +69,15 @@ st.markdown("""
         padding: 12px 24px !important;
     }
 
-    /* 이미지 모서리 둥글게 설정 */
     img {
         border-radius: 14px !important;
     }
 
-    /* 캘린더 날짜 상자 스타일 */
     .cal-day-box {
         background-color: #F8F9FA;
         border-radius: 12px;
         padding: 6px;
-        min-height: 110px;
+        min-height: 120px;
         border: 1px solid #E9ECEF;
     }
     .cal-day-num {
@@ -99,64 +91,156 @@ st.markdown("""
 
 
 # -----------------------------------------------------------------------------
-# 2. 세션 상태(Session State) 초기화 및 API 키 불러오기
+# 2. 세션 상태 초기화 및 Secrets 불러오기
 # -----------------------------------------------------------------------------
 if "my_books" not in st.session_state:
     st.session_state.my_books = []
 
-if "active_book_id" not in st.session_state:
-    st.session_state.active_book_id = None
-
 if "user_name" not in st.session_state:
-    st.session_state.user_name = ""
+    st.session_state.user_name = ""  # 로그인된 사용자 아이디
 
 if "profile_image" not in st.session_state:
     st.session_state.profile_image = None
 
-# Streamlit Secrets에서 카카오 API 키 안전하게 가져오기
 try:
     KAKAO_API_KEY = st.secrets["KAKAO_API_KEY"]
 except (KeyError, FileNotFoundError):
     KAKAO_API_KEY = ""
 
+try:
+    GITHUB_TOKEN = st.secrets["GITHUB_TOKEN"]
+    GITHUB_REPO = st.secrets["GITHUB_REPO"]
+except (KeyError, FileNotFoundError):
+    GITHUB_TOKEN = ""
+    GITHUB_REPO = ""
+
 
 # -----------------------------------------------------------------------------
-# 3. 초기 화면: 사용자 이름 입력 또는 게스트 입장
+# 3. 깃허브 파일 연동 함수 (회원가입 정보 저장/불러오기)
+# -----------------------------------------------------------------------------
+USERS_FILE_PATH = "users.csv"
+
+def load_users_from_github():
+    """깃허브에 저장된 users.csv 파일을 읽어와 데이터프레임으로 반환합니다."""
+    if not GITHUB_TOKEN or not GITHUB_REPO:
+        return pd.DataFrame(columns=["username", "password"])
+    
+    try:
+        g = Github(GITHUB_TOKEN)
+        repo = g.get_repo(GITHUB_REPO)
+        file_content = repo.get_contents(USERS_FILE_PATH)
+        decoded_data = base64.b64decode(file_content.content).decode("utf-8")
+        from io import StringIO
+        df = pd.read_csv(StringIO(decoded_data))
+        return df
+    except Exception:
+        # 파일이 아직 없으면 빈 데이터프레임 반환
+        return pd.DataFrame(columns=["username", "password"])
+
+def save_user_to_github(username, password):
+    """새로운 회원 정보를 users.csv에 추가하여 깃허브에 커밋(Commit)합니다."""
+    if not GITHUB_TOKEN or not GITHUB_REPO:
+        return False, "깃허브 설정이 되어있지 않습니다."
+    
+    try:
+        g = Github(GITHUB_TOKEN)
+        repo = g.get_repo(GITHUB_REPO)
+        
+        df = load_users_from_github()
+        
+        # 중복 아이디 체크
+        if not df.empty and username in df["username"].values:
+            return False, "이미 존재하는 아이디입니다."
+        
+        # 새 사용자 추가
+        new_row = pd.DataFrame([[username, password]], columns=["username", "password"])
+        df = pd.concat([df, new_row], ignore_index=True)
+        csv_data = df.to_csv(index=False)
+        
+        try:
+            # 기존 파일이 있다면 업데이트 (SHA 필요)
+            file = repo.get_contents(USERS_FILE_PATH)
+            repo.update_file(
+                USERS_FILE_PATH, 
+                f"Add new user: {username}", 
+                csv_data, 
+                file.sha
+            )
+        except Exception:
+            # 파일이 없다면 새로 생성
+            repo.create_file(
+                USERS_FILE_PATH, 
+                f"Create {USERS_FILE_PATH}", 
+                csv_data
+            )
+        return True, "회원가입이 완료되었습니다!"
+    except Exception as e:
+        return False, f"오류 발생: {e}"
+
+
+# -----------------------------------------------------------------------------
+# 4. 로그인 및 회원가입 화면
 # -----------------------------------------------------------------------------
 if not st.session_state.user_name:
-    st.markdown("<br><br><br>", unsafe_allow_html=True)
+    st.markdown("<br><br>", unsafe_allow_html=True)
     _, center_col, _ = st.columns([1, 2, 1])
     
     with center_col:
         with st.container(border=True):
             st.markdown('<div class="luxury-title" style="text-align: center;">📚 나만의 책 아지트</div>', unsafe_allow_html=True)
             st.markdown("<br>", unsafe_allow_html=True)
-            st.write("아지트에서 사용하실 이름을 입력해 주세요.")
             
-            input_name = st.text_input("이름 또는 닉네임 입력", placeholder="닉네임을 입력하세요", label_visibility="collapsed")
+            auth_tab1, auth_tab2, auth_tab3 = st.tabs(["로그인", "회원가입", "게스트 입장"])
             
-            st.markdown("<br>", unsafe_allow_html=True)
+            # 1) 로그인 탭
+            with auth_tab1:
+                st.write("계정으로 로그인하세요.")
+                login_id = st.text_input("아이디", key="login_id")
+                login_pw = st.text_input("비밀번호", type="password", key="login_pw")
+                
+                if st.button("로그인하기 🚀", use_container_width=True):
+                    users_df = load_users_from_github()
+                    if users_df.empty:
+                        st.error("등록된 회원이 없거나 깃허브 연결을 확인해 주세요.")
+                    else:
+                        match = users_df[(users_df["username"] == login_id) & (users_df["password"] == login_pw)]
+                        if not match.empty:
+                            st.session_state.user_name = login_id
+                            st.success(f"환영합니다, {login_id}님!")
+                            st.rerun()
+                        else:
+                            st.error("아이디 또는 비밀번호가 올바르지 않습니다.")
             
-            if st.button("책 아지트 입장하기 🚀", use_container_width=True):
-                if input_name.strip():
-                    st.session_state.user_name = input_name.strip()
+            # 2) 회원가입 탭 (깃허브 파일에 저장)
+            with auth_tab2:
+                st.write("새로운 계정을 만드세요 (깃허브에 저장됩니다).")
+                reg_id = st.text_input("사용할 아이디", key="reg_id")
+                reg_pw = st.text_input("사용할 비밀번호", type="password", key="reg_pw")
+                
+                if st.button("회원가입 완료 ✨", use_container_width=True):
+                    if reg_id.strip() and reg_pw.strip():
+                        success, msg = save_user_to_github(reg_id.strip(), reg_pw.strip())
+                        if success:
+                            st.success(msg)
+                        else:
+                            st.error(msg)
+                    else:
+                        st.warning("아이디와 비밀번호를 모두 입력해 주세요!")
+            
+            # 3) 게스트 입장 탭
+            with auth_tab3:
+                st.write("로그인 없이 간편하게 체험해보세요.")
+                if st.button("🙋‍♂️ 게스트로 입장하기", use_container_width=True, type="secondary"):
+                    st.session_state.user_name = "게스트"
                     st.rerun()
-                else:
-                    st.warning("이름을 입력해 주세요!")
-            
-            if st.button("🙋‍♂️ 게스트로 입장하기", use_container_width=True, type="secondary"):
-                st.session_state.user_name = "게스트"
-                st.rerun()
 
     st.stop()
 
 
 # -----------------------------------------------------------------------------
-# 4. 유틸리티 함수 정의
+# 5. 유틸리티 함수 정의 (도서 검색 및 별점)
 # -----------------------------------------------------------------------------
-
 def search_book_kakao(query):
-    """카카오 API를 통해 책 제목으로 검색하고 실제 표지 이미지와 데이터를 가져옵니다."""
     if not KAKAO_API_KEY:
         return [{
             "title": f"[API키 미설정] {query}",
@@ -195,15 +279,14 @@ def render_star_rating(rating):
 
 
 # -----------------------------------------------------------------------------
-# 5. 사이드바 영역 (프로필 설정 및 책 등록)
+# 6. 사이드바 영역 (프로필 설정 및 책 등록)
 # -----------------------------------------------------------------------------
 with st.sidebar:
     with st.container(border=True):
-        st.markdown('<h3 style="margin-top:0; color:#4A3E3D; font-size:1.2rem;">👤 프로필 설정</h3>', unsafe_allow_html=True)
+        st.markdown(f'<h3 style="margin-top:0; color:#4A3E3D; font-size:1.2rem;">👤 {st.session_state.user_name}</h3>', unsafe_allow_html=True)
         
-        new_name = st.text_input("이름 수정", value=st.session_state.user_name)
-        if new_name != st.session_state.user_name and new_name.strip():
-            st.session_state.user_name = new_name.strip()
+        if st.button("로그아웃 🚪", use_container_width=True):
+            st.session_state.user_name = ""
             st.rerun()
 
         new_profile = st.file_uploader("프로필 사진 등록/변경", type=["png", "jpg", "jpeg"], key="side_profile")
@@ -232,6 +315,10 @@ with st.sidebar:
                 target_date = st.date_input("목표 완료일", datetime.date.today() + datetime.timedelta(days=14))
                 status = st.selectbox("독서 상태", ["읽는 중", "읽기 완료", "위시리스트"])
                 
+                completed_date_input = datetime.date.today()
+                if status == "읽기 완료":
+                    completed_date_input = st.date_input("완독한 날짜 선택", datetime.date.today())
+                
                 initial_rating = 5.0
                 if status == "읽기 완료":
                     rating_options = [i / 2 for i in range(1, 11)]
@@ -240,7 +327,6 @@ with st.sidebar:
                 submit_button = st.form_submit_button("내 책장에 추가")
                 
                 if submit_button:
-                    # 동일한 책 제목과 동일한 상태(위치)가 이미 존재하는지 검사
                     is_duplicate = any(
                         b["title"] == selected_book["title"] and b["status"] == status
                         for b in st.session_state.my_books
@@ -249,7 +335,7 @@ with st.sidebar:
                     if is_duplicate:
                         st.warning(f"⚠️ 이미 [{status}]에 추가된 책입니다!")
                     else:
-                        today_str = datetime.date.today().strftime("%Y-%m-%d")
+                        comp_date_str = completed_date_input.strftime("%Y-%m-%d") if status == "읽기 완료" else None
                         new_book = {
                             "id": len(st.session_state.my_books) + 1,
                             "title": selected_book["title"],
@@ -261,7 +347,7 @@ with st.sidebar:
                             "status": status,
                             "rating": initial_rating if status == "읽기 완료" else 0.0,
                             "notes": "",
-                            "completed_date": today_str if status == "읽기 완료" else None
+                            "completed_date": comp_date_str
                         }
                         st.session_state.my_books.append(new_book)
                         st.success(f"'{selected_book['title']}' 책이 저장소에 추가되었습니다!")
@@ -270,7 +356,7 @@ with st.sidebar:
 
 
 # -----------------------------------------------------------------------------
-# 6. 도서 상세정보 팝업 모달 (@st.dialog)
+# 7. 도서 상세정보 팝업 모달
 # -----------------------------------------------------------------------------
 @st.dialog("📚 도서 상세 및 기록 관리")
 def show_book_details(book):
@@ -293,17 +379,19 @@ def show_book_details(book):
             key=f"modal_page_{book['id']}"
         )
         
+        completion_date = st.date_input("완독한 날짜", datetime.date.today(), key=f"modal_comp_date_{book['id']}")
+
         if st.button("페이지 저장", key=f"modal_save_page_{book['id']}"):
             book["current_page"] = new_page
             if new_page >= book["total_pages"]:
                 book["status"] = "읽기 완료"
-                book["completed_date"] = datetime.date.today().strftime("%Y-%m-%d")
+                book["completed_date"] = completion_date.strftime("%Y-%m-%d")
                 st.balloons()
                 st.success("축하합니다! 완독하셨습니다!")
             st.rerun()
 
     elif book["status"] == "읽기 완료":
-        st.success("🎉 완독한 책입니다!")
+        st.success(f"🎉 완독한 책입니다! (완독일: {book.get('completed_date', '미기재')})")
         current_rating = book.get("rating", 5.0) or 5.0
         st.write(f"**내 평점:** {render_star_rating(current_rating)}")
         
@@ -338,7 +426,7 @@ def show_book_details(book):
 
 
 # -----------------------------------------------------------------------------
-# 7. 메인 화면 탭 구역 (1. 프로필 아지트 / 2. 내 책장)
+# 8. 메인 화면 탭 구역
 # -----------------------------------------------------------------------------
 page_tab1, page_tab2 = st.tabs([f"👤 {st.session_state.user_name}의 아지트", "📚 내 책장"])
 
