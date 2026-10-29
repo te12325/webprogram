@@ -78,20 +78,20 @@ st.markdown("""
     }
 
     img {
-        border-radius: 8px !important;
+        border-radius: 6px !important;
     }
 
     .cal-day-box {
         background-color: #F8F9FA;
         border-radius: 10px;
         padding: 4px;
-        min-height: 130px;
+        min-height: 125px;
         border: 1px solid #E9ECEF;
         text-align: center;
     }
     .cal-day-num {
         font-weight: bold;
-        font-size: 0.85rem;
+        font-size: 0.8rem;
         color: #495057;
         margin-bottom: 2px;
     }
@@ -602,7 +602,7 @@ with page_tab2:
                         if st.button("📝 기록", key=f"btn_w_{book['id']}", use_container_width=True):
                             show_book_details(book)
 
-    # 3) 캘린더 (완독한 책 표지 크기를 테두리 안에 쏙 들어가도록 width=55 적용)
+    # 3) 캘린더 (HTML 태그로 테두리 칸 내부에 표지 이미지를 완벽하게 포함)
     with shelf_tab3:
         st.subheader("📅 완독 기록 캘린더")
         
@@ -638,9 +638,9 @@ with page_tab2:
                             st.markdown(f"""
                                 <div class="cal-day-box">
                                     <div class="cal-day-num">{day}일 🎉</div>
+                                    <img src="{matched_book['cover_url']}" style="width: 48px; border-radius: 4px; margin-top: 2px;">
                                 </div>
                             """, unsafe_allow_html=True)
-                            st.image(matched_book["cover_url"], width=55)
                         else:
                             st.markdown(f"""
                                 <div class="cal-day-box">
