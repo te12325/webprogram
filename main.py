@@ -41,10 +41,19 @@ st.markdown("""
         box-shadow: 0 4px 15px rgba(243, 210, 223, 0.4) !important;
     }
 
+    /* 책장 카드 컨테이너 내부 여백을 좁게 주어 표지와 테두리를 딱 맞춤 */
+    [data-testid="stVerticalBlockBorderWrapper"] > div {
+        border-radius: 14px !important;
+        padding: 10px !important;
+        text-align: center !important;
+    }
+
     div.stButton > button {
-        border-radius: 12px !important;
+        border-radius: 10px !important;
         font-weight: bold !important;
         border: none !important;
+        padding: 4px 8px !important;
+        font-size: 0.85rem !important;
         transition: all 0.2s ease-in-out;
     }
     div.stButton > button:hover {
@@ -58,7 +67,7 @@ st.markdown("""
         border-radius: 14px !important;
     }
 
-    [data-testid="stForm"], div[data-testid="stVerticalBlockBorderWrapper"] > div {
+    [data-testid="stForm"] {
         border-radius: 20px !important;
     }
 
@@ -70,7 +79,7 @@ st.markdown("""
     }
 
     img {
-        border-radius: 10px !important;
+        border-radius: 8px !important;
     }
 
     .cal-day-box {
@@ -561,7 +570,7 @@ with page_tab1:
 with page_tab2:
     shelf_tab1, shelf_tab2, shelf_tab3, shelf_tab4 = st.tabs(["📖 읽는 중", "📌 위시리스트", "📅 캘린더", "⭐ 평점"])
     
-    # 1) 읽는 중 (열 너비를 좁게 쪼개어 카드가 표지 크기에 맞게 모이도록 설정)
+    # 1) 읽는 중 (표지 폭 95px에 맞춰 컨테이너 및 텍스트·버튼 정렬)
     with shelf_tab1:
         reading_books = [b for b in st.session_state.my_books if b["status"] == "읽는 중"]
         if not reading_books:
@@ -571,13 +580,13 @@ with page_tab2:
             for idx, book in enumerate(reading_books):
                 with cols[idx % 6]:
                     with st.container(border=True):
-                        st.image(book["cover_url"], width=100)
-                        st.markdown(f"<div style='font-size: 0.85rem; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>{book['title']}</div>", unsafe_allow_html=True)
-                        st.caption(f"<div style='font-size: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>{book['author']}</div>", unsafe_allow_html=True)
+                        st.image(book["cover_url"], width=95)
+                        st.markdown(f"<div style='font-size: 0.8rem; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 4px;'>{book['title']}</div>", unsafe_allow_html=True)
+                        st.caption(f"<div style='font-size: 0.7rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px;'>{book['author']}</div>", unsafe_allow_html=True)
                         if st.button("📝 기록", key=f"btn_r_{book['id']}", use_container_width=True):
                             show_book_details(book)
 
-    # 2) 위시리스트 (열 너비를 좁게 쪼개어 카드가 표지 크기에 맞게 모이도록 설정)
+    # 2) 위시리스트 (표지 폭 95px에 맞춰 컨테이너 및 텍스트·버튼 정렬)
     with shelf_tab2:
         wish_books = [b for b in st.session_state.my_books if b["status"] == "위시리스트"]
         if not wish_books:
@@ -587,9 +596,9 @@ with page_tab2:
             for idx, book in enumerate(wish_books):
                 with cols[idx % 6]:
                     with st.container(border=True):
-                        st.image(book["cover_url"], width=100)
-                        st.markdown(f"<div style='font-size: 0.85rem; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>{book['title']}</div>", unsafe_allow_html=True)
-                        st.caption(f"<div style='font-size: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>{book['author']}</div>", unsafe_allow_html=True)
+                        st.image(book["cover_url"], width=95)
+                        st.markdown(f"<div style='font-size: 0.8rem; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 4px;'>{book['title']}</div>", unsafe_allow_html=True)
+                        st.caption(f"<div style='font-size: 0.7rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px;'>{book['author']}</div>", unsafe_allow_html=True)
                         if st.button("📝 기록", key=f"btn_w_{book['id']}", use_container_width=True):
                             show_book_details(book)
 
