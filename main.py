@@ -102,7 +102,6 @@ if "user_name" not in st.session_state:
 if "profile_image" not in st.session_state:
     st.session_state.profile_image = None
 
-# 비밀번호 보기 상태 토글을 위한 세션 변수
 if "show_login_pw" not in st.session_state:
     st.session_state.show_login_pw = False
 
@@ -196,7 +195,6 @@ if not st.session_state.user_name:
                 st.write("계정으로 로그인하세요.")
                 login_id = st.text_input("아이디", key="login_id")
                 
-                # 비밀번호 입력창과 눈 이모지 버튼을 나란히 배치
                 pw_col1, pw_col2 = st.columns([4, 1])
                 with pw_col1:
                     login_pw = st.text_input(
@@ -206,8 +204,8 @@ if not st.session_state.user_name:
                     )
                 with pw_col2:
                     st.markdown("<div style='margin-top: 28px;'></div>", unsafe_allow_html=True)
-                    eye_icon = "👁️" if st.session_state.show_login_pw else "🙈"
-                    if st.button(eye_icon, key="toggle_login_eye", help="비밀번호 표시/숨기기"):
+                    text_eye = "[ 👀 ]" if st.session_state.show_login_pw else "[ 🙈 ]"
+                    if st.button(text_eye, key="toggle_login_eye"):
                         st.session_state.show_login_pw = not st.session_state.show_login_pw
                         st.rerun()
                 
@@ -229,7 +227,6 @@ if not st.session_state.user_name:
                 st.write("새로운 계정을 만드세요 (깃허브에 저장됩니다).")
                 reg_id = st.text_input("사용할 아이디", key="reg_id")
                 
-                # 회원가입 비밀번호 입력창과 눈 이모지 버튼 나란히 배치
                 reg_pw_col1, reg_pw_col2 = st.columns([4, 1])
                 with reg_pw_col1:
                     reg_pw = st.text_input(
@@ -239,8 +236,8 @@ if not st.session_state.user_name:
                     )
                 with reg_pw_col2:
                     st.markdown("<div style='margin-top: 28px;'></div>", unsafe_allow_html=True)
-                    reg_eye_icon = "👁️" if st.session_state.show_reg_pw else "🙈"
-                    if st.button(reg_eye_icon, key="toggle_reg_eye", help="비밀번호 표시/숨기기"):
+                    text_reg_eye = "[ 👀 ]" if st.session_state.show_reg_pw else "[ 🙈 ]"
+                    if st.button(text_reg_eye, key="toggle_reg_eye"):
                         st.session_state.show_reg_pw = not st.session_state.show_reg_pw
                         st.rerun()
                 
