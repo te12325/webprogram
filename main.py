@@ -42,7 +42,7 @@ st.markdown("""
     }
 
     div.stButton > button {
-        border-radius: 14px !important;
+        border-radius: 12px !important;
         font-weight: bold !important;
         border: none !important;
         transition: all 0.2s ease-in-out;
@@ -70,7 +70,7 @@ st.markdown("""
     }
 
     img {
-        border-radius: 14px !important;
+        border-radius: 10px !important;
     }
 
     .cal-day-box {
@@ -561,35 +561,35 @@ with page_tab1:
 with page_tab2:
     shelf_tab1, shelf_tab2, shelf_tab3, shelf_tab4 = st.tabs(["📖 읽는 중", "📌 위시리스트", "📅 캘린더", "⭐ 평점"])
     
-    # 1) 읽는 중 (표지 크기 축소: width=110 적용)
+    # 1) 읽는 중 (열 너비를 좁게 쪼개어 카드가 표지 크기에 맞게 모이도록 설정)
     with shelf_tab1:
         reading_books = [b for b in st.session_state.my_books if b["status"] == "읽는 중"]
         if not reading_books:
             st.info("현재 읽고 있는 책이 없습니다. 사이드바에서 책을 추가해 보세요!")
         else:
-            cols = st.columns(4)
+            cols = st.columns(6)
             for idx, book in enumerate(reading_books):
-                with cols[idx % 4]:
+                with cols[idx % 6]:
                     with st.container(border=True):
-                        st.image(book["cover_url"], width=110)
-                        st.markdown(f"**{book['title']}**")
-                        st.caption(f"{book['author']}")
+                        st.image(book["cover_url"], width=100)
+                        st.markdown(f"<div style='font-size: 0.85rem; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>{book['title']}</div>", unsafe_allow_html=True)
+                        st.caption(f"<div style='font-size: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>{book['author']}</div>", unsafe_allow_html=True)
                         if st.button("📝 기록", key=f"btn_r_{book['id']}", use_container_width=True):
                             show_book_details(book)
 
-    # 2) 위시리스트 (표지 크기 축소: width=110 적용)
+    # 2) 위시리스트 (열 너비를 좁게 쪼개어 카드가 표지 크기에 맞게 모이도록 설정)
     with shelf_tab2:
         wish_books = [b for b in st.session_state.my_books if b["status"] == "위시리스트"]
         if not wish_books:
             st.info("위시리스트에 담긴 책이 없습니다.")
         else:
-            cols = st.columns(4)
+            cols = st.columns(6)
             for idx, book in enumerate(wish_books):
-                with cols[idx % 4]:
+                with cols[idx % 6]:
                     with st.container(border=True):
-                        st.image(book["cover_url"], width=110)
-                        st.markdown(f"**{book['title']}**")
-                        st.caption(f"{book['author']}")
+                        st.image(book["cover_url"], width=100)
+                        st.markdown(f"<div style='font-size: 0.85rem; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>{book['title']}</div>", unsafe_allow_html=True)
+                        st.caption(f"<div style='font-size: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>{book['author']}</div>", unsafe_allow_html=True)
                         if st.button("📝 기록", key=f"btn_w_{book['id']}", use_container_width=True):
                             show_book_details(book)
 
