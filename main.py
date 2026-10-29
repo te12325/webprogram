@@ -4,7 +4,7 @@ import datetime
 import calendar
 import requests
 from PIL import Image
-from io import BytesIO
+from io import BytesIO, StringIO
 import base64
 from github import Github, GithubException
 
@@ -129,7 +129,6 @@ def load_users_from_github():
         repo = g.get_repo(GITHUB_REPO)
         file_content = repo.get_contents(USERS_FILE_PATH)
         decoded_data = base64.b64decode(file_content.content).decode("utf-8")
-        from io import StringIO
         df = pd.read_csv(StringIO(decoded_data))
         return df
     except Exception:
@@ -149,4 +148,337 @@ def save_user_to_github(username, password):
             return False, "이미 존재하는 아이디입니다."
         
         new_row = pd.DataFrame([[username, password]], columns=["username", "password"])
-        df = pd
+        df = pd.concat([df, new_row], ignore_index=True)
+        csv_data = df.to_csv(index=False)
+        
+        try:
+            file = repo.get_contents(USERS_FILE_PATH)
+            repo.update_file(
+                USERS_FILE_PATH, 
+                f"Add new user: {username}", 
+                csv_data, 
+                file.sha
+            )
+        except Exception:
+            repo.create_file(
+                USERS_FILE_PATH, 
+                f"Create {USERS_FILE_PATH}", 
+                csv_data
+            )
+        return True, "회원가입이 완료되었습니다!"
+    except Exception as e:
+        return False, f"오류 발생: {e}"
+
+
+# -----------------------------------------------------------------------------
+# 4. 로그인 및 회원가입 화면
+# -----------------------------------------------------------------------------
+if not st.session_state.user_name:
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    _, center_col, _ = st.columns([1, 2, 1])
+    
+    with center_col:
+        with st.container(border=True):
+            st.markdown('<div class="luxury-title" style="text-align: center;">📚 책 아지트</div>', unsafe_allow_html=True)
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            auth_tab1, auth_tab2, auth_tab3 = st.tabs(["로그인", "회원가입", "게스트 입장"])
+            
+            with auth_tab1:
+                st.write("계정으로 로그인하세요.")
+                login_id = st.text_input("아이디", key="login_id")
+                login_pw = st.text_input("비밀번호", type="password", key="login_pw")
+                
+                if st.button("로그인하기 🚀", use_container_width=True):
+                    users_df = load_users_from_github()
+                    if users_df.empty:
+                        st.error("등록된 회원이 없거나 깃허브 연결을 확인해 주세요.")
+                    else:
+                        match = users_df[(users_df["username"] == login_id) & (users_df["password"] == login_pw)]
+                        if not match.empty:
+                            st.session_state.user_name = login_id
+                            st.success(f"환영합니다, {login_id}님!")
+                            st.rerun()
+                        else:
+                            st.error("아이디 또는 비밀번호가 올바르지 않습니다.")
+            
+            with auth_tab2:
+                st.write("새로운 계정을 만드세요 (깃허브에 저장됩니다).")
+                reg_id = st.text_input("사용할 아이디", key="reg_id")
+                reg_pw = st.text_input("사용할 비밀번호", type="password", key="reg_pw")
+                
+                if st.button("회원가입 완료 ✨", use_container_width=True):
+                    if reg_id.strip() and reg_pw.strip():
+                        success, msg = save_user_to_github(reg_id.strip(), reg_pw.strip())
+                        if success:
+                            st.success(msg)
+                        else:
+                            st.error(msg)
+                    else:
+                        st.warning("아이디와 비밀번호를 모두 입력해 주세요!")
+            
+            with auth_tab3:
+                st.write("로그인 없이 간편하게 체험해보세요.")
+                if st.button("🙋‍♂️ 게스트로 입장하기", use_container_width=True, type="secondary"):
+                    st.session_state.user_name = "게스트"
+                    st.rerun()
+
+    st.stop()
+
+
+# -----------------------------------------------------------------------------
+# 5. 유틸리티 함수 정의 (도서 검색 및 별점)
+# -----------------------------------------------------------------------------
+def search_book_kakao(query):
+    if not KAKAO_API_KEY:
+        return [{
+            "title": f"[API키 미설정] {query}",
+            "authors": ["설정 확인 필요"],
+            "thumbnail": "https://via.placeholder.com/150x200.png?text=No+API+Key",
+            "total_pages": 300
+        }]
+    
+    url = f"https://dapi.kakao.com/v3/search/book?query={query}"
+    headers = {"Authorization": f"KakaoAK {KAKAO_API_KEY}"}
+    
+    try:
+        response = requests.get(url, headers=headers)
+        if response.status_code == 200:
+            results = response.json().get("documents", [])
+            books = []
+            for item in results:
+                books.append({
+                    "title": item.get("title", "제목 없음"),
+                    "authors": item.get("authors", ["저자 미상"]),
+                    "thumbnail": item.get("thumbnail", "https://via.placeholder.com/150x200.png?text=No+Cover"),
+                    "total_pages": 300
+                })
+            return books
+    except Exception as e:
+        st.error(f"도서 검색 중 오류가 발생했습니다: {e}")
+    return []
+
+def render_star_rating(rating):
+    full_stars = int(rating)
+    has_half = (rating - full_stars) >= 0.5
+    empty_stars = 5 - full_stars - (1 if has_half else 0)
+    
+    stars_str = "★" * full_stars + ("✨" if has_half else "") + "☆" * empty_stars
+    return f"{stars_str} ({rating}/5.0)"
+
+
+# -----------------------------------------------------------------------------
+# 6. 사이드바 영역 (프로필 설정 및 책 등록)
+# -----------------------------------------------------------------------------
+with st.sidebar:
+    with st.container(border=True):
+        st.markdown(f'<h3 style="margin-top:0; color:#4A3E3D; font-size:1.2rem;">👤 {st.session_state.user_name}</h3>', unsafe_allow_html=True)
+        
+        if st.button("로그아웃 🚪", use_container_width=True):
+            st.session_state.user_name = ""
+            st.rerun()
+
+        new_profile = st.file_uploader("프로필 사진 등록/변경", type=["png", "jpg", "jpeg"], key="side_profile")
+        if new_profile is not None:
+            st.session_state.profile_image = new_profile.getvalue()
+
+    st.divider()
+
+    st.header("📖 책 등록하기")
+    search_term = st.text_input("책 제목을 검색하세요")
+
+    if search_term:
+        search_results = search_book_kakao(search_term)
+        
+        if search_results:
+            selected_book = st.selectbox(
+                "검색 결과에서 책을 선택하세요:",
+                search_results,
+                format_func=lambda x: f"{x['title']} ({', '.join(x['authors'])})"
+            )
+            
+            with st.form("add_book_form"):
+                st.write(f"**선택한 책:** {selected_book['title']}")
+                
+                total_pages = st.number_input("전체 페이지 수", min_value=1, value=300, step=10)
+                target_date = st.date_input("목표 완료일", datetime.date.today() + datetime.timedelta(days=14))
+                status = st.selectbox("독서 상태", ["읽는 중", "읽기 완료", "위시리스트"])
+                
+                completed_date_input = datetime.date.today()
+                if status == "읽기 완료":
+                    completed_date_input = st.date_input("완독한 날짜 선택", datetime.date.today())
+                
+                initial_rating = 5.0
+                if status == "읽기 완료":
+                    rating_options = [i / 2 for i in range(1, 11)]
+                    initial_rating = st.select_slider("별점 평점 선택", options=rating_options, value=5.0)
+
+                submit_button = st.form_submit_button("내 책장에 추가")
+                
+                if submit_button:
+                    is_duplicate = any(
+                        b["title"] == selected_book["title"] and b["status"] == status
+                        for b in st.session_state.my_books
+                    )
+                    
+                    if is_duplicate:
+                        st.warning(f"⚠️ 이미 [{status}]에 추가된 책입니다!")
+                    else:
+                        comp_date_str = completed_date_input.strftime("%Y-%m-%d") if status == "읽기 완료" else None
+                        new_book = {
+                            "id": len(st.session_state.my_books) + 1,
+                            "title": selected_book["title"],
+                            "author": ", ".join(selected_book["authors"]),
+                            "cover_url": selected_book["thumbnail"],
+                            "total_pages": total_pages,
+                            "current_page": total_pages if status == "읽기 완료" else 0,
+                            "target_date": target_date,
+                            "status": status,
+                            "rating": initial_rating if status == "읽기 완료" else 0.0,
+                            "notes": "",
+                            "completed_date": comp_date_str
+                        }
+                        st.session_state.my_books.append(new_book)
+                        st.success(f"'{selected_book['title']}' 책이 저장소에 추가되었습니다!")
+        else:
+            st.warning("검색 결과가 없습니다.")
+
+
+# -----------------------------------------------------------------------------
+# 7. 도서 상세정보 팝업 모달
+# -----------------------------------------------------------------------------
+@st.dialog("📚 도서 상세 및 기록 관리")
+def show_book_details(book):
+    st.image(book["cover_url"], width=150)
+    st.subheader(book["title"])
+    st.caption(f"저자: {book['author']} | 전체 {book['total_pages']}p")
+    st.divider()
+
+    RATING_OPTIONS = [i / 2 for i in range(1, 11)]
+
+    if book["status"] == "읽는 중":
+        progress = min(book["current_page"] / book["total_pages"], 1.0)
+        st.progress(progress, text=f"진행률: {int(progress * 100)}%")
+        
+        new_page = st.number_input(
+            "현재 읽은 페이지 입력", 
+            min_value=0, 
+            max_value=book["total_pages"], 
+            value=book["current_page"],
+            key=f"modal_page_{book['id']}"
+        )
+        
+        completion_date = st.date_input("완독한 날짜", datetime.date.today(), key=f"modal_comp_date_{book['id']}")
+
+        if st.button("페이지 저장", key=f"modal_save_page_{book['id']}"):
+            book["current_page"] = new_page
+            if new_page >= book["total_pages"]:
+                book["status"] = "읽기 완료"
+                book["completed_date"] = completion_date.strftime("%Y-%m-%d")
+                st.balloons()
+                st.success("축하합니다! 완독하셨습니다!")
+            st.rerun()
+
+    elif book["status"] == "읽기 완료":
+        st.success(f"🎉 완독한 책입니다! (완독일: {book.get('completed_date', '미기재')})")
+        current_rating = book.get("rating", 5.0) or 5.0
+        st.write(f"**내 평점:** {render_star_rating(current_rating)}")
+        
+        new_rating = st.select_slider(
+            "평점 수정 (0.5 단위)",
+            options=RATING_OPTIONS,
+            value=current_rating,
+            key=f"modal_rating_{book['id']}"
+        )
+        if new_rating != book.get("rating"):
+            book["rating"] = new_rating
+            st.rerun()
+
+    elif book["status"] == "위시리스트":
+        if st.button("지금 읽기 시작 📖", key=f"modal_start_{book['id']}"):
+            book["status"] = "읽는 중"
+            st.rerun()
+
+    st.divider()
+    st.write("💬 **인용구 / 독서 메모**")
+    note_text = st.text_area(
+        label="인용구 입력",
+        label_visibility="collapsed",
+        value=book.get("notes", ""),
+        height=120,
+        key=f"modal_note_{book['id']}"
+    )
+    if st.button("인용구 저장", key=f"modal_save_note_{book['id']}"):
+        book["notes"] = note_text
+        st.success("저장되었습니다!")
+        st.rerun()
+
+
+# -----------------------------------------------------------------------------
+# 8. 메인 화면 탭 구역
+# -----------------------------------------------------------------------------
+page_tab1, page_tab2 = st.tabs([f"👤 {st.session_state.user_name}의 아지트", "📚 내 책장"])
+
+with page_tab1:
+    with st.container(border=True):
+        col1, col2 = st.columns([1, 4])
+        
+        with col1:
+            if st.session_state.profile_image:
+                image = Image.open(BytesIO(st.session_state.profile_image))
+                st.image(image, width=130)
+            else:
+                st.markdown("""
+                    <div style="font-size: 80px; text-align: center; background-color: #F3E8FF; border-radius: 50%; width: 120px; height: 120px; line-height: 120px;">
+                        👤
+                    </div>
+                """, unsafe_allow_html=True)
+                
+        with col2:
+            st.markdown(f'<div class="luxury-title">📚 {st.session_state.user_name}의 아지트</div>', unsafe_allow_html=True)
+            st.write("독서 목표와 기록을 차곡차곡 쌓아가는 공간입니다.")
+            
+            total_b = len(st.session_state.my_books)
+            reading_b = len([b for b in st.session_state.my_books if b['status'] == '읽는 중'])
+            completed_b = len([b for b in st.session_state.my_books if b['status'] == '읽기 완료'])
+            
+            m1, m2, m3 = st.columns(3)
+            m1.metric("총 등록 도서", f"{total_b}권")
+            m2.metric("현재 읽는 중", f"{reading_b}권")
+            m3.metric("완독한 도서", f"{completed_b}권")
+
+with page_tab2:
+    shelf_tab1, shelf_tab2, shelf_tab3, shelf_tab4 = st.tabs(["📖 읽는 중", "📌 위시리스트", "📅 캘린더", "⭐ 평점"])
+    
+    with shelf_tab1:
+        reading_books = [b for b in st.session_state.my_books if b["status"] == "읽는 중"]
+        if not reading_books:
+            st.info("현재 읽고 있는 책이 없습니다. 사이드바에서 책을 추가해 보세요!")
+        else:
+            cols = st.columns(4)
+            for idx, book in enumerate(reading_books):
+                with cols[idx % 4]:
+                    with st.container(border=True):
+                        st.image(book["cover_url"], use_container_width=True)
+                        st.markdown(f"**{book['title']}**")
+                        st.caption(f"{book['author']}")
+                        if st.button("📝 기록", key=f"btn_r_{book['id']}", use_container_width=True):
+                            show_book_details(book)
+
+    with shelf_tab2:
+        wish_books = [b for b in st.session_state.my_books if b["status"] == "위시리스트"]
+        if not wish_books:
+            st.info("위시리스트에 담긴 책이 없습니다.")
+        else:
+            cols = st.columns(4)
+            for idx, book in enumerate(wish_books):
+                with cols[idx % 4]:
+                    with st.container(border=True):
+                        st.image(book["cover_url"], use_container_width=True)
+                        st.markdown(f"**{book['title']}**")
+                        st.caption(f"{book['author']}")
+                        if st.button("📝 기록", key=f"btn_w_{book['id']}", use_container_width=True):
+                            show_book_details(book)
+
+    with shelf_tab3:
+        st.subheader("📅 완독 기록 캘린더")
