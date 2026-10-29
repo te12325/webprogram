@@ -164,7 +164,6 @@ def save_user_to_github(username, password):
         return False, f"오류 발생: {e}"
 
 def load_books_for_user(username):
-    """깃허브에서 특정 사용자의 책장 데이터를 불러옵니다."""
     if not GITHUB_TOKEN or not GITHUB_REPO or username == "게스트":
         return []
     try:
@@ -195,14 +194,12 @@ def load_books_for_user(username):
         return []
 
 def save_books_for_user(username, books):
-    """현재 사용자의 책장 데이터를 깃허브에 영구 저장합니다."""
     if not GITHUB_TOKEN or not GITHUB_REPO or username == "게스트":
         return
     try:
         g = Github(GITHUB_TOKEN)
         repo = g.get_repo(GITHUB_REPO)
         
-        # 전체 책장 데이터를 불러오거나 생성
         try:
             file_content = repo.get_contents(BOOKS_FILE_PATH)
             decoded_data = base64.b64decode(file_content.content).decode("utf-8")
@@ -210,7 +207,6 @@ def save_books_for_user(username, books):
         except Exception:
             df = pd.DataFrame(columns=["username", "id", "title", "author", "cover_url", "total_pages", "current_page", "target_date", "status", "rating", "notes", "completed_date"])
         
-        # 다른 사용자의 데이터는 유지하고, 현재 사용자 데이터만 교체
         df = df[df["username"] != username]
         
         new_rows = []
@@ -285,7 +281,6 @@ if not st.session_state.user_name:
                         match = users_df[(users_df["username"] == login_id) & (users_df["password"] == login_pw)]
                         if not match.empty:
                             st.session_state.user_name = login_id
-                            # 로그인 성공 시 해당 사용자의 책장을 불러옴
                             st.session_state.my_books = load_books_for_user(login_id)
                             st.success(f"환영합니다, {login_id}님!")
                             st.rerun()
@@ -450,7 +445,6 @@ with st.sidebar:
                             "completed_date": comp_date_str
                         }
                         st.session_state.my_books.append(new_book)
-                        # 책 추가 후 깃허브에 자동 저장
                         save_books_for_user(st.session_state.user_name, st.session_state.my_books)
                         st.success(f"'{selected_book['title']}' 책이 저장소에 추가되었습니다!")
         else:
@@ -567,6 +561,7 @@ with page_tab1:
 with page_tab2:
     shelf_tab1, shelf_tab2, shelf_tab3, shelf_tab4 = st.tabs(["📖 읽는 중", "📌 위시리스트", "📅 캘린더", "⭐ 평점"])
     
+    # 1) 읽는 중 (표지 크기 축소: width=110 적용)
     with shelf_tab1:
         reading_books = [b for b in st.session_state.my_books if b["status"] == "읽는 중"]
         if not reading_books:
@@ -576,12 +571,13 @@ with page_tab2:
             for idx, book in enumerate(reading_books):
                 with cols[idx % 4]:
                     with st.container(border=True):
-                        st.image(book["cover_url"], use_container_width=True)
+                        st.image(book["cover_url"], width=110)
                         st.markdown(f"**{book['title']}**")
                         st.caption(f"{book['author']}")
                         if st.button("📝 기록", key=f"btn_r_{book['id']}", use_container_width=True):
                             show_book_details(book)
 
+    # 2) 위시리스트 (표지 크기 축소: width=110 적용)
     with shelf_tab2:
         wish_books = [b for b in st.session_state.my_books if b["status"] == "위시리스트"]
         if not wish_books:
@@ -591,7 +587,7 @@ with page_tab2:
             for idx, book in enumerate(wish_books):
                 with cols[idx % 4]:
                     with st.container(border=True):
-                        st.image(book["cover_url"], use_container_width=True)
+                        st.image(book["cover_url"], width=110)
                         st.markdown(f"**{book['title']}**")
                         st.caption(f"{book['author']}")
                         if st.button("📝 기록", key=f"btn_w_{book['id']}", use_container_width=True):
