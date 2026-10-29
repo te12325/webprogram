@@ -122,32 +122,29 @@ except (KeyError, FileNotFoundError):
 
 
 # -----------------------------------------------------------------------------
-# 3. 깃허브 파일 연동 함수 (회원가입 정보 저장/불러오기)
+# 3. 깃허브 파일 연동 함수 (회원 정보 및 도서 데이터 저장/불러오기)
 # -----------------------------------------------------------------------------
 USERS_FILE_PATH = "users.csv"
+BOOKS_FILE_PATH = "user_books.csv"
 
 def load_users_from_github():
     if not GITHUB_TOKEN or not GITHUB_REPO:
         return pd.DataFrame(columns=["username", "password"])
-    
     try:
         g = Github(GITHUB_TOKEN)
         repo = g.get_repo(GITHUB_REPO)
         file_content = repo.get_contents(USERS_FILE_PATH)
         decoded_data = base64.b64decode(file_content.content).decode("utf-8")
-        df = pd.read_csv(StringIO(decoded_data))
-        return df
+        return pd.read_csv(StringIO(decoded_data))
     except Exception:
         return pd.DataFrame(columns=["username", "password"])
 
 def save_user_to_github(username, password):
     if not GITHUB_TOKEN or not GITHUB_REPO:
         return False, "깃허브 설정이 되어있지 않습니다."
-    
     try:
         g = Github(GITHUB_TOKEN)
         repo = g.get_repo(GITHUB_REPO)
-        
         df = load_users_from_github()
         
         if not df.empty and username in df["username"].values:
@@ -159,21 +156,93 @@ def save_user_to_github(username, password):
         
         try:
             file = repo.get_contents(USERS_FILE_PATH)
-            repo.update_file(
-                USERS_FILE_PATH, 
-                f"Add new user: {username}", 
-                csv_data, 
-                file.sha
-            )
+            repo.update_file(USERS_FILE_PATH, f"Add user: {username}", csv_data, file.sha)
         except Exception:
-            repo.create_file(
-                USERS_FILE_PATH, 
-                f"Create {USERS_FILE_PATH}", 
-                csv_data
-            )
+            repo.create_file(USERS_FILE_PATH, f"Create {USERS_FILE_PATH}", csv_data)
         return True, "회원가입이 완료되었습니다!"
     except Exception as e:
         return False, f"오류 발생: {e}"
+
+def load_books_for_user(username):
+    """깃허브에서 특정 사용자의 책장 데이터를 불러옵니다."""
+    if not GITHUB_TOKEN or not GITHUB_REPO or username == "게스트":
+        return []
+    try:
+        g = Github(GITHUB_TOKEN)
+        repo = g.get_repo(GITHUB_REPO)
+        file_content = repo.get_contents(BOOKS_FILE_PATH)
+        decoded_data = base64.b64decode(file_content.content).decode("utf-8")
+        df = pd.read_csv(StringIO(decoded_data))
+        
+        user_df = df[df["username"] == username]
+        books = []
+        for _, row in user_df.iterrows():
+            books.append({
+                "id": int(row["id"]),
+                "title": row["title"],
+                "author": row["author"],
+                "cover_url": row["cover_url"],
+                "total_pages": int(row["total_pages"]),
+                "current_page": int(row["current_page"]),
+                "target_date": row["target_date"],
+                "status": row["status"],
+                "rating": float(row["rating"]),
+                "notes": str(row["notes"]) if pd.notna(row["notes"]) else "",
+                "completed_date": row["completed_date"] if pd.notna(row["completed_date"]) else None
+            })
+        return books
+    except Exception:
+        return []
+
+def save_books_for_user(username, books):
+    """현재 사용자의 책장 데이터를 깃허브에 영구 저장합니다."""
+    if not GITHUB_TOKEN or not GITHUB_REPO or username == "게스트":
+        return
+    try:
+        g = Github(GITHUB_TOKEN)
+        repo = g.get_repo(GITHUB_REPO)
+        
+        # 전체 책장 데이터를 불러오거나 생성
+        try:
+            file_content = repo.get_contents(BOOKS_FILE_PATH)
+            decoded_data = base64.b64decode(file_content.content).decode("utf-8")
+            df = pd.read_csv(StringIO(decoded_data))
+        except Exception:
+            df = pd.DataFrame(columns=["username", "id", "title", "author", "cover_url", "total_pages", "current_page", "target_date", "status", "rating", "notes", "completed_date"])
+        
+        # 다른 사용자의 데이터는 유지하고, 현재 사용자 데이터만 교체
+        df = df[df["username"] != username]
+        
+        new_rows = []
+        for b in books:
+            new_rows.append({
+                "username": username,
+                "id": b["id"],
+                "title": b["title"],
+                "author": b["author"],
+                "cover_url": b["cover_url"],
+                "total_pages": b["total_pages"],
+                "current_page": b["current_page"],
+                "target_date": b["target_date"],
+                "status": b["status"],
+                "rating": b["rating"],
+                "notes": b["notes"],
+                "completed_date": b["completed_date"]
+            })
+        
+        if new_rows:
+            new_df = pd.DataFrame(new_rows)
+            df = pd.concat([df, new_df], ignore_index=True)
+            
+        csv_data = df.to_csv(index=False)
+        
+        try:
+            file = repo.get_contents(BOOKS_FILE_PATH)
+            repo.update_file(BOOKS_FILE_PATH, f"Update books for {username}", csv_data, file.sha)
+        except Exception:
+            repo.create_file(BOOKS_FILE_PATH, f"Create {BOOKS_FILE_PATH}", csv_data)
+    except Exception as e:
+        st.error(f"데이터 저장 중 오류 발생: {e}")
 
 
 # -----------------------------------------------------------------------------
@@ -216,6 +285,8 @@ if not st.session_state.user_name:
                         match = users_df[(users_df["username"] == login_id) & (users_df["password"] == login_pw)]
                         if not match.empty:
                             st.session_state.user_name = login_id
+                            # 로그인 성공 시 해당 사용자의 책장을 불러옴
+                            st.session_state.my_books = load_books_for_user(login_id)
                             st.success(f"환영합니다, {login_id}님!")
                             st.rerun()
                         else:
@@ -253,6 +324,7 @@ if not st.session_state.user_name:
                 st.write("로그인 없이 간편하게 체험해보세요.")
                 if st.button("🙋‍♂️ 게스트로 입장하기", use_container_width=True, type="secondary"):
                     st.session_state.user_name = "게스트"
+                    st.session_state.my_books = []
                     st.rerun()
 
     st.stop()
@@ -306,7 +378,6 @@ with st.sidebar:
     with st.container(border=True):
         st.markdown(f'<h3 style="margin-top:0; color:#4A3E3D; font-size:1.2rem;">👤 프로필 설정</h3>', unsafe_allow_html=True)
         
-        # 닉네임/이름 수정 칸 추가
         new_name = st.text_input("이름(닉네임) 수정", value=st.session_state.user_name)
         if new_name != st.session_state.user_name and new_name.strip():
             st.session_state.user_name = new_name.strip()
@@ -319,6 +390,7 @@ with st.sidebar:
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("로그아웃 🚪", use_container_width=True):
             st.session_state.user_name = ""
+            st.session_state.my_books = []
             st.rerun()
 
     st.divider()
@@ -371,13 +443,15 @@ with st.sidebar:
                             "cover_url": selected_book["thumbnail"],
                             "total_pages": total_pages,
                             "current_page": total_pages if status == "읽기 완료" else 0,
-                            "target_date": target_date,
+                            "target_date": str(target_date),
                             "status": status,
                             "rating": initial_rating if status == "읽기 완료" else 0.0,
                             "notes": "",
                             "completed_date": comp_date_str
                         }
                         st.session_state.my_books.append(new_book)
+                        # 책 추가 후 깃허브에 자동 저장
+                        save_books_for_user(st.session_state.user_name, st.session_state.my_books)
                         st.success(f"'{selected_book['title']}' 책이 저장소에 추가되었습니다!")
         else:
             st.warning("검색 결과가 없습니다.")
@@ -416,6 +490,7 @@ def show_book_details(book):
                 book["completed_date"] = completion_date.strftime("%Y-%m-%d")
                 st.balloons()
                 st.success("축하합니다! 완독하셨습니다!")
+            save_books_for_user(st.session_state.user_name, st.session_state.my_books)
             st.rerun()
 
     elif book["status"] == "읽기 완료":
@@ -431,11 +506,13 @@ def show_book_details(book):
         )
         if new_rating != book.get("rating"):
             book["rating"] = new_rating
+            save_books_for_user(st.session_state.user_name, st.session_state.my_books)
             st.rerun()
 
     elif book["status"] == "위시리스트":
         if st.button("지금 읽기 시작 📖", key=f"modal_start_{book['id']}"):
             book["status"] = "읽는 중"
+            save_books_for_user(st.session_state.user_name, st.session_state.my_books)
             st.rerun()
 
     st.divider()
@@ -449,6 +526,7 @@ def show_book_details(book):
     )
     if st.button("인용구 저장", key=f"modal_save_note_{book['id']}"):
         book["notes"] = note_text
+        save_books_for_user(st.session_state.user_name, st.session_state.my_books)
         st.success("저장되었습니다!")
         st.rerun()
 
