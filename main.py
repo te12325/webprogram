@@ -102,6 +102,13 @@ if "user_name" not in st.session_state:
 if "profile_image" not in st.session_state:
     st.session_state.profile_image = None
 
+# 비밀번호 보기 상태 토글을 위한 세션 변수
+if "show_login_pw" not in st.session_state:
+    st.session_state.show_login_pw = False
+
+if "show_reg_pw" not in st.session_state:
+    st.session_state.show_reg_pw = False
+
 try:
     KAKAO_API_KEY = st.secrets["KAKAO_API_KEY"]
 except (KeyError, FileNotFoundError):
@@ -184,10 +191,25 @@ if not st.session_state.user_name:
             
             auth_tab1, auth_tab2, auth_tab3 = st.tabs(["로그인", "회원가입", "게스트 입장"])
             
+            # 1) 로그인 탭
             with auth_tab1:
                 st.write("계정으로 로그인하세요.")
                 login_id = st.text_input("아이디", key="login_id")
-                login_pw = st.text_input("비밀번호", type="password", key="login_pw")
+                
+                # 비밀번호 입력창과 눈 이모지 버튼을 나란히 배치
+                pw_col1, pw_col2 = st.columns([4, 1])
+                with pw_col1:
+                    login_pw = st.text_input(
+                        "비밀번호", 
+                        type="default" if st.session_state.show_login_pw else "password", 
+                        key="login_pw"
+                    )
+                with pw_col2:
+                    st.markdown("<div style='margin-top: 28px;'></div>", unsafe_allow_html=True)
+                    eye_icon = "👁️" if st.session_state.show_login_pw else "🙈"
+                    if st.button(eye_icon, key="toggle_login_eye", help="비밀번호 표시/숨기기"):
+                        st.session_state.show_login_pw = not st.session_state.show_login_pw
+                        st.rerun()
                 
                 if st.button("로그인하기 🚀", use_container_width=True):
                     users_df = load_users_from_github()
@@ -202,10 +224,25 @@ if not st.session_state.user_name:
                         else:
                             st.error("아이디 또는 비밀번호가 올바르지 않습니다.")
             
+            # 2) 회원가입 탭
             with auth_tab2:
                 st.write("새로운 계정을 만드세요 (깃허브에 저장됩니다).")
                 reg_id = st.text_input("사용할 아이디", key="reg_id")
-                reg_pw = st.text_input("사용할 비밀번호", type="password", key="reg_pw")
+                
+                # 회원가입 비밀번호 입력창과 눈 이모지 버튼 나란히 배치
+                reg_pw_col1, reg_pw_col2 = st.columns([4, 1])
+                with reg_pw_col1:
+                    reg_pw = st.text_input(
+                        "사용할 비밀번호", 
+                        type="default" if st.session_state.show_reg_pw else "password", 
+                        key="reg_pw"
+                    )
+                with reg_pw_col2:
+                    st.markdown("<div style='margin-top: 28px;'></div>", unsafe_allow_html=True)
+                    reg_eye_icon = "👁️" if st.session_state.show_reg_pw else "🙈"
+                    if st.button(reg_eye_icon, key="toggle_reg_eye", help="비밀번호 표시/숨기기"):
+                        st.session_state.show_reg_pw = not st.session_state.show_reg_pw
+                        st.rerun()
                 
                 if st.button("회원가입 완료 ✨", use_container_width=True):
                     if reg_id.strip() and reg_pw.strip():
@@ -217,6 +254,7 @@ if not st.session_state.user_name:
                     else:
                         st.warning("아이디와 비밀번호를 모두 입력해 주세요!")
             
+            # 3) 게스트 입장 탭
             with auth_tab3:
                 st.write("로그인 없이 간편하게 체험해보세요.")
                 if st.button("🙋‍♂️ 게스트로 입장하기", use_container_width=True, type="secondary"):
@@ -482,3 +520,62 @@ with page_tab2:
 
     with shelf_tab3:
         st.subheader("📅 완독 기록 캘린더")
+        
+        c_year_col, c_month_col = st.columns(2)
+        with c_year_col:
+            selected_year = st.selectbox("연도 선택", list(range(2026, 2036)), index=0)
+        with c_month_col:
+            selected_month = st.selectbox("월 선택", list(range(1, 13)), index=datetime.date.today().month - 1 if selected_year == 2026 else 0)
+
+        month_calendar = calendar.monthcalendar(selected_year, selected_month)
+        week_days = ["일", "월", "화", "수", "목", "금", "토"]
+        
+        day_cols = st.columns(7)
+        for idx, day_name in enumerate(week_days):
+            day_cols[idx].markdown(f"**{day_name}**")
+            
+        completed_map = {}
+        for b in st.session_state.my_books:
+            if b.get("status") == "읽기 완료" and b.get("completed_date"):
+                completed_map[b["completed_date"]] = b
+
+        for week in month_calendar:
+            w_cols = st.columns(7)
+            for idx, day in enumerate(week):
+                with w_cols[idx]:
+                    if day == 0:
+                        st.write("")
+                    else:
+                        date_str = f"{selected_year}-{selected_month:02d}-{day:02d}"
+                        
+                        if date_str in completed_map:
+                            matched_book = completed_map[date_str]
+                            st.markdown(f"""
+                                <div class="cal-day-box">
+                                    <div class="cal-day-num">{day}일 🎉</div>
+                                </div>
+                            """, unsafe_allow_html=True)
+                            st.image(matched_book["cover_url"], use_container_width=True)
+                        else:
+                            st.markdown(f"""
+                                <div class="cal-day-box">
+                                    <div class="cal-day-num">{day}</div>
+                                </div>
+                            """, unsafe_allow_html=True)
+
+    with shelf_tab4:
+        st.subheader("⭐ 완독 도서 평점 모아보기")
+        completed_books = [b for b in st.session_state.my_books if b["status"] == "읽기 완료"]
+        if not completed_books:
+            st.info("아직 완독한 책이 없습니다.")
+        else:
+            completed_books.sort(key=lambda x: x.get("rating", 0), reverse=True)
+            cols = st.columns(4)
+            for idx, book in enumerate(completed_books):
+                with cols[idx % 4]:
+                    with st.container(border=True):
+                        st.image(book["cover_url"], use_container_width=True)
+                        st.markdown(f"**{book['title']}**")
+                        st.caption(render_star_rating(book.get("rating", 5.0)))
+                        if st.button("📝 기록", key=f"btn_c_{book['id']}", use_container_width=True):
+                            show_book_details(book)
