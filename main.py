@@ -190,7 +190,6 @@ if not st.session_state.user_name:
             
             auth_tab1, auth_tab2, auth_tab3 = st.tabs(["로그인", "회원가입", "게스트 입장"])
             
-            # 1) 로그인 탭
             with auth_tab1:
                 st.write("계정으로 로그인하세요.")
                 login_id = st.text_input("아이디", key="login_id")
@@ -222,7 +221,6 @@ if not st.session_state.user_name:
                         else:
                             st.error("아이디 또는 비밀번호가 올바르지 않습니다.")
             
-            # 2) 회원가입 탭
             with auth_tab2:
                 st.write("새로운 계정을 만드세요.")
                 reg_id = st.text_input("사용할 아이디", key="reg_id")
@@ -251,7 +249,6 @@ if not st.session_state.user_name:
                     else:
                         st.warning("아이디와 비밀번호를 모두 입력해 주세요!")
             
-            # 3) 게스트 입장 탭
             with auth_tab3:
                 st.write("로그인 없이 간편하게 체험해보세요.")
                 if st.button("🙋‍♂️ 게스트로 입장하기", use_container_width=True, type="secondary"):
@@ -307,15 +304,22 @@ def render_star_rating(rating):
 # -----------------------------------------------------------------------------
 with st.sidebar:
     with st.container(border=True):
-        st.markdown(f'<h3 style="margin-top:0; color:#4A3E3D; font-size:1.2rem;">👤 {st.session_state.user_name}</h3>', unsafe_allow_html=True)
+        st.markdown(f'<h3 style="margin-top:0; color:#4A3E3D; font-size:1.2rem;">👤 프로필 설정</h3>', unsafe_allow_html=True)
         
-        if st.button("로그아웃 🚪", use_container_width=True):
-            st.session_state.user_name = ""
+        # 닉네임/이름 수정 칸 추가
+        new_name = st.text_input("이름(닉네임) 수정", value=st.session_state.user_name)
+        if new_name != st.session_state.user_name and new_name.strip():
+            st.session_state.user_name = new_name.strip()
             st.rerun()
 
         new_profile = st.file_uploader("프로필 사진 등록/변경", type=["png", "jpg", "jpeg"], key="side_profile")
         if new_profile is not None:
             st.session_state.profile_image = new_profile.getvalue()
+
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button("로그아웃 🚪", use_container_width=True):
+            st.session_state.user_name = ""
+            st.rerun()
 
     st.divider()
 
