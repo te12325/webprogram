@@ -97,7 +97,7 @@ if "my_books" not in st.session_state:
     st.session_state.my_books = []
 
 if "user_name" not in st.session_state:
-    st.session_state.user_name = ""  # 로그인된 사용자 아이디
+    st.session_state.user_name = ""
 
 if "profile_image" not in st.session_state:
     st.session_state.profile_image = None
@@ -121,7 +121,6 @@ except (KeyError, FileNotFoundError):
 USERS_FILE_PATH = "users.csv"
 
 def load_users_from_github():
-    """깃허브에 저장된 users.csv 파일을 읽어와 데이터프레임으로 반환합니다."""
     if not GITHUB_TOKEN or not GITHUB_REPO:
         return pd.DataFrame(columns=["username", "password"])
     
@@ -134,11 +133,9 @@ def load_users_from_github():
         df = pd.read_csv(StringIO(decoded_data))
         return df
     except Exception:
-        # 파일이 아직 없으면 빈 데이터프레임 반환
         return pd.DataFrame(columns=["username", "password"])
 
 def save_user_to_github(username, password):
-    """새로운 회원 정보를 users.csv에 추가하여 깃허브에 커밋(Commit)합니다."""
     if not GITHUB_TOKEN or not GITHUB_REPO:
         return False, "깃허브 설정이 되어있지 않습니다."
     
@@ -148,17 +145,14 @@ def save_user_to_github(username, password):
         
         df = load_users_from_github()
         
-        # 중복 아이디 체크
         if not df.empty and username in df["username"].values:
             return False, "이미 존재하는 아이디입니다."
         
-        # 새 사용자 추가
         new_row = pd.DataFrame([[username, password]], columns=["username", "password"])
         df = pd.concat([df, new_row], ignore_index=True)
         csv_data = df.to_csv(index=False)
         
         try:
-            # 기존 파일이 있다면 업데이트 (SHA 필요)
             file = repo.get_contents(USERS_FILE_PATH)
             repo.update_file(
                 USERS_FILE_PATH, 
@@ -167,7 +161,6 @@ def save_user_to_github(username, password):
                 file.sha
             )
         except Exception:
-            # 파일이 없다면 새로 생성
             repo.create_file(
                 USERS_FILE_PATH, 
                 f"Create {USERS_FILE_PATH}", 
@@ -187,12 +180,11 @@ if not st.session_state.user_name:
     
     with center_col:
         with st.container(border=True):
-            st.markdown('<div class="luxury-title" style="text-align: center;">📚 나만의 책 아지트</div>', unsafe_allow_html=True)
+            st.markdown('<div class="luxury-title" style="text-align: center;">📚 책 아지트</div>', unsafe_allow_html=True)
             st.markdown("<br>", unsafe_allow_html=True)
             
             auth_tab1, auth_tab2, auth_tab3 = st.tabs(["로그인", "회원가입", "게스트 입장"])
             
-            # 1) 로그인 탭
             with auth_tab1:
                 st.write("계정으로 로그인하세요.")
                 login_id = st.text_input("아이디", key="login_id")
@@ -211,7 +203,6 @@ if not st.session_state.user_name:
                         else:
                             st.error("아이디 또는 비밀번호가 올바르지 않습니다.")
             
-            # 2) 회원가입 탭 (깃허브 파일에 저장)
             with auth_tab2:
                 st.write("새로운 계정을 만드세요 (깃허브에 저장됩니다).")
                 reg_id = st.text_input("사용할 아이디", key="reg_id")
@@ -227,7 +218,6 @@ if not st.session_state.user_name:
                     else:
                         st.warning("아이디와 비밀번호를 모두 입력해 주세요!")
             
-            # 3) 게스트 입장 탭
             with auth_tab3:
                 st.write("로그인 없이 간편하게 체험해보세요.")
                 if st.button("🙋‍♂️ 게스트로 입장하기", use_container_width=True, type="secondary"):
@@ -345,210 +335,4 @@ with st.sidebar:
                             "current_page": total_pages if status == "읽기 완료" else 0,
                             "target_date": target_date,
                             "status": status,
-                            "rating": initial_rating if status == "읽기 완료" else 0.0,
-                            "notes": "",
-                            "completed_date": comp_date_str
-                        }
-                        st.session_state.my_books.append(new_book)
-                        st.success(f"'{selected_book['title']}' 책이 저장소에 추가되었습니다!")
-        else:
-            st.warning("검색 결과가 없습니다.")
-
-
-# -----------------------------------------------------------------------------
-# 7. 도서 상세정보 팝업 모달
-# -----------------------------------------------------------------------------
-@st.dialog("📚 도서 상세 및 기록 관리")
-def show_book_details(book):
-    st.image(book["cover_url"], width=150)
-    st.subheader(book["title"])
-    st.caption(f"저자: {book['author']} | 전체 {book['total_pages']}p")
-    st.divider()
-
-    RATING_OPTIONS = [i / 2 for i in range(1, 11)]
-
-    if book["status"] == "읽는 중":
-        progress = min(book["current_page"] / book["total_pages"], 1.0)
-        st.progress(progress, text=f"진행률: {int(progress * 100)}%")
-        
-        new_page = st.number_input(
-            "현재 읽은 페이지 입력", 
-            min_value=0, 
-            max_value=book["total_pages"], 
-            value=book["current_page"],
-            key=f"modal_page_{book['id']}"
-        )
-        
-        completion_date = st.date_input("완독한 날짜", datetime.date.today(), key=f"modal_comp_date_{book['id']}")
-
-        if st.button("페이지 저장", key=f"modal_save_page_{book['id']}"):
-            book["current_page"] = new_page
-            if new_page >= book["total_pages"]:
-                book["status"] = "읽기 완료"
-                book["completed_date"] = completion_date.strftime("%Y-%m-%d")
-                st.balloons()
-                st.success("축하합니다! 완독하셨습니다!")
-            st.rerun()
-
-    elif book["status"] == "읽기 완료":
-        st.success(f"🎉 완독한 책입니다! (완독일: {book.get('completed_date', '미기재')})")
-        current_rating = book.get("rating", 5.0) or 5.0
-        st.write(f"**내 평점:** {render_star_rating(current_rating)}")
-        
-        new_rating = st.select_slider(
-            "평점 수정 (0.5 단위)",
-            options=RATING_OPTIONS,
-            value=current_rating,
-            key=f"modal_rating_{book['id']}"
-        )
-        if new_rating != book.get("rating"):
-            book["rating"] = new_rating
-            st.rerun()
-
-    elif book["status"] == "위시리스트":
-        if st.button("지금 읽기 시작 📖", key=f"modal_start_{book['id']}"):
-            book["status"] = "읽는 중"
-            st.rerun()
-
-    st.divider()
-    st.write("💬 **인용구 / 독서 메모**")
-    note_text = st.text_area(
-        label="인용구 입력",
-        label_visibility="collapsed",
-        value=book.get("notes", ""),
-        height=120,
-        key=f"modal_note_{book['id']}"
-    )
-    if st.button("인용구 저장", key=f"modal_save_note_{book['id']}"):
-        book["notes"] = note_text
-        st.success("저장되었습니다!")
-        st.rerun()
-
-
-# -----------------------------------------------------------------------------
-# 8. 메인 화면 탭 구역
-# -----------------------------------------------------------------------------
-page_tab1, page_tab2 = st.tabs([f"👤 {st.session_state.user_name}의 아지트", "📚 내 책장"])
-
-with page_tab1:
-    with st.container(border=True):
-        col1, col2 = st.columns([1, 4])
-        
-        with col1:
-            if st.session_state.profile_image:
-                image = Image.open(BytesIO(st.session_state.profile_image))
-                st.image(image, width=130)
-            else:
-                st.markdown("""
-                    <div style="font-size: 80px; text-align: center; background-color: #F3E8FF; border-radius: 50%; width: 120px; height: 120px; line-height: 120px;">
-                        👤
-                    </div>
-                """, unsafe_allow_html=True)
-                
-        with col2:
-            st.markdown(f'<div class="luxury-title">📚 {st.session_state.user_name}의 아지트</div>', unsafe_allow_html=True)
-            st.write("나만의 독서 목표와 기록을 차곡차곡 쌓아가는 공간입니다.")
-            
-            total_b = len(st.session_state.my_books)
-            reading_b = len([b for b in st.session_state.my_books if b['status'] == '읽는 중'])
-            completed_b = len([b for b in st.session_state.my_books if b['status'] == '읽기 완료'])
-            
-            m1, m2, m3 = st.columns(3)
-            m1.metric("총 등록 도서", f"{total_b}권")
-            m2.metric("현재 읽는 중", f"{reading_b}권")
-            m3.metric("완독한 도서", f"{completed_b}권")
-
-with page_tab2:
-    shelf_tab1, shelf_tab2, shelf_tab3, shelf_tab4 = st.tabs(["📖 읽는 중", "📌 위시리스트", "📅 캘린더", "⭐ 평점"])
-    
-    with shelf_tab1:
-        reading_books = [b for b in st.session_state.my_books if b["status"] == "읽는 중"]
-        if not reading_books:
-            st.info("현재 읽고 있는 책이 없습니다. 사이드바에서 책을 추가해 보세요!")
-        else:
-            cols = st.columns(4)
-            for idx, book in enumerate(reading_books):
-                with cols[idx % 4]:
-                    with st.container(border=True):
-                        st.image(book["cover_url"], use_container_width=True)
-                        st.markdown(f"**{book['title']}**")
-                        st.caption(f"{book['author']}")
-                        if st.button("📝 기록", key=f"btn_r_{book['id']}", use_container_width=True):
-                            show_book_details(book)
-
-    with shelf_tab2:
-        wish_books = [b for b in st.session_state.my_books if b["status"] == "위시리스트"]
-        if not wish_books:
-            st.info("위시리스트에 담긴 책이 없습니다.")
-        else:
-            cols = st.columns(4)
-            for idx, book in enumerate(wish_books):
-                with cols[idx % 4]:
-                    with st.container(border=True):
-                        st.image(book["cover_url"], use_container_width=True)
-                        st.markdown(f"**{book['title']}**")
-                        st.caption(f"{book['author']}")
-                        if st.button("📝 기록", key=f"btn_w_{book['id']}", use_container_width=True):
-                            show_book_details(book)
-
-    with shelf_tab3:
-        st.subheader("📅 완독 기록 캘린더")
-        
-        c_year_col, c_month_col = st.columns(2)
-        with c_year_col:
-            selected_year = st.selectbox("연도 선택", list(range(2026, 2036)), index=0)
-        with c_month_col:
-            selected_month = st.selectbox("월 선택", list(range(1, 13)), index=datetime.date.today().month - 1 if selected_year == 2026 else 0)
-
-        month_calendar = calendar.monthcalendar(selected_year, selected_month)
-        week_days = ["일", "월", "화", "수", "목", "금", "토"]
-        
-        day_cols = st.columns(7)
-        for idx, day_name in enumerate(week_days):
-            day_cols[idx].markdown(f"**{day_name}**")
-            
-        completed_map = {}
-        for b in st.session_state.my_books:
-            if b.get("status") == "읽기 완료" and b.get("completed_date"):
-                completed_map[b["completed_date"]] = b
-
-        for week in month_calendar:
-            w_cols = st.columns(7)
-            for idx, day in enumerate(week):
-                with w_cols[idx]:
-                    if day == 0:
-                        st.write("")
-                    else:
-                        date_str = f"{selected_year}-{selected_month:02d}-{day:02d}"
-                        
-                        if date_str in completed_map:
-                            matched_book = completed_map[date_str]
-                            st.markdown(f"""
-                                <div class="cal-day-box">
-                                    <div class="cal-day-num">{day}일 🎉</div>
-                                </div>
-                            """, unsafe_allow_html=True)
-                            st.image(matched_book["cover_url"], use_container_width=True)
-                        else:
-                            st.markdown(f"""
-                                <div class="cal-day-box">
-                                    <div class="cal-day-num">{day}</div>
-                                </div>
-                            """, unsafe_allow_html=True)
-
-    with shelf_tab4:
-        st.subheader("⭐ 완독 도서 평점 모아보기")
-        completed_books = [b for b in st.session_state.my_books if b["status"] == "읽기 완료"]
-        if not completed_books:
-            st.info("아직 완독한 책이 없습니다.")
-        else:
-            completed_books.sort(key=lambda x: x.get("rating", 0), reverse=True)
-            cols = st.columns(4)
-            for idx, book in enumerate(completed_books):
-                with cols[idx % 4]:
-                    with st.container(border=True):
-                        st.image(book["cover_url"], use_container_width=True)
-                        st.markdown(f"**{book['title']}**")
-                        st.caption(render_star_rating(book.get("rating", 5.0)))
-                        if st.button("📝 기록", key=f"btn_c_{book['id']}", use_container_width=True):
-                            show_book_details(book)
+                            "rating": initial_rating if status == "읽기 완료" else 0.
