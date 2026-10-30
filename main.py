@@ -561,12 +561,12 @@ def show_book_details(book):
         st.success("메모가 저장되었습니다! 📝")
         st.rerun()
 
-    # 도서 삭제 버튼 추가
+    # 삭제 버튼 문구 변경
     st.divider()
-    if st.button("🗑️ 이 책 아지트에서 삭제하기", key=f"modal_delete_{book['id']}", use_container_width=True):
+    if st.button("🗑️ 삭제하기", key=f"modal_delete_{book['id']}", use_container_width=True):
         st.session_state.my_books = [b for b in st.session_state.my_books if b["id"] != book["id"]]
         save_books_for_user(st.session_state.user_name, st.session_state.my_books)
-        st.success("책이 아지트에서 삭제되었습니다.")
+        st.success("책이 삭제되었습니다.")
         st.rerun()
 
 
