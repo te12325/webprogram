@@ -489,7 +489,7 @@ with st.sidebar:
 
 
 # -----------------------------------------------------------------------------
-# 7. 도서 상세정보 팝업 모달
+# 7. 도서 상세정보 및 삭제 팝업 모달
 # -----------------------------------------------------------------------------
 @st.dialog("☕ 도서 상세 및 기록 관리")
 def show_book_details(book):
@@ -561,6 +561,14 @@ def show_book_details(book):
         st.success("메모가 저장되었습니다! 📝")
         st.rerun()
 
+    # 도서 삭제 버튼 추가
+    st.divider()
+    if st.button("🗑️ 이 책 아지트에서 삭제하기", key=f"modal_delete_{book['id']}", use_container_width=True):
+        st.session_state.my_books = [b for b in st.session_state.my_books if b["id"] != book["id"]]
+        save_books_for_user(st.session_state.user_name, st.session_state.my_books)
+        st.success("책이 아지트에서 삭제되었습니다.")
+        st.rerun()
+
 
 # -----------------------------------------------------------------------------
 # 8. 메인 화면 탭 구역
@@ -630,7 +638,7 @@ with page_tab2:
                         if st.button("📝 기록", key=f"btn_w_{book['id']}", use_container_width=True):
                             show_book_details(book)
 
-    # 3) 스트림릿 컴포넌트 기반 완벽한 다이어리 캘린더 (HTML 에러 원천 차단)
+    # 3) 스트림릿 컴포넌트 기반 완벽한 다이어리 캘린더
     with shelf_tab3:
         st.subheader("📅 완독 기록 다이어리 ✨")
         
