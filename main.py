@@ -561,7 +561,7 @@ def show_book_details(book):
         st.success("메모가 저장되었습니다! 📝")
         st.rerun()
 
-    # 삭제 버튼 문구 변경
+    # 삭제 버튼
     st.divider()
     if st.button("🗑️ 삭제하기", key=f"modal_delete_{book['id']}", use_container_width=True):
         st.session_state.my_books = [b for b in st.session_state.my_books if b["id"] != book["id"]]
@@ -592,7 +592,7 @@ with page_tab1:
                 
         with col2:
             st.markdown(f'<div class="luxury-title">☕ {st.session_state.user_name}의 아지트 ✨</div>', unsafe_allow_html=True)
-            st.write("🌱 따뜻한 차 한 잔과 함께 독서 목표와 기록을 쌓아가는 아늑한 공간입니다.")
+            st.markdown("<br>", unsafe_allow_html=True)
             
             total_b = len(st.session_state.my_books)
             reading_b = len([b for b in st.session_state.my_books if b['status'] == '읽는 중'])
@@ -602,6 +602,20 @@ with page_tab1:
             m1.metric("총 등록 도서 📚", f"{total_b}권")
             m2.metric("현재 읽는 중 🌱", f"{reading_b}권")
             m3.metric("완독한 도서 ✨", f"{completed_b}권")
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.subheader("✨ 내가 완독한 책들")
+    
+    completed_books_main = [b for b in st.session_state.my_books if b["status"] == "읽기 완료"]
+    if not completed_books_main:
+        st.info("✨ 아직 완독한 책이 없습니다. 책을 읽고 완독 기록을 남겨보세요!")
+    else:
+        cols = st.columns(6)
+        for idx, book in enumerate(completed_books_main):
+            with cols[idx % 6]:
+                with st.container(border=True):
+                    st.image(book["cover_url"], width=95)
+                    st.markdown(f"<div style='font-size: 0.8rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 6px; color: #5C4B43;'>{book['title']}</div>", unsafe_allow_html=True)
 
 with page_tab2:
     shelf_tab1, shelf_tab2, shelf_tab3, shelf_tab4 = st.tabs(["📖 읽는 중", "📌 위시리스트", "📅 캘린더", "⭐ 평점"])
