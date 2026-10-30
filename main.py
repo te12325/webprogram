@@ -19,14 +19,12 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-    /* 구글 웹폰트 및 Pretendard 가독성 적용 */
     @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
 
     html, body, [class*="css"], div, span, label, input, button, textarea {
-        font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif !important;
+        font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif !important;
     }
 
-    /* 전체 배경 및 메인 컬러 톤 조정 (따뜻한 아이보리 북카페 느낌) */
     .stApp {
         background-color: #FAF7F2 !important;
     }
@@ -40,7 +38,6 @@ st.markdown("""
         letter-spacing: -0.5px;
     }
 
-    /* 사이드바 감성 디자인 */
     [data-testid="stSidebar"] div[data-testid="stVerticalBlockBorderWrapper"]:first-of-type > div {
         background: linear-gradient(135deg, #FDFBF7 0%, #F4ECE1 100%) !important;
         border-radius: 24px !important;
@@ -49,7 +46,6 @@ st.markdown("""
         box-shadow: 0 6px 20px rgba(92, 75, 67, 0.06) !important;
     }
 
-    /* 책장 카드 컨테이너 (우드 아이보리 톤 & 둥근 모서리 + 부드러운 그림자) */
     [data-testid="stVerticalBlockBorderWrapper"] > div {
         background-color: #FFFFFF !important;
         border-radius: 20px !important;
@@ -59,7 +55,6 @@ st.markdown("""
         text-align: center !important;
     }
 
-    /* 버튼 스타일링 (부드러운 파스텔 우드 브라운 계열) */
     div.stButton > button {
         background-color: #8C7A6B !important;
         color: #FFFFFF !important;
@@ -75,7 +70,6 @@ st.markdown("""
         transform: translateY(-2px);
     }
 
-    /* 입력창 및 셀렉트박스 모던하게 둥글리기 */
     div[data-baseweb="input"], div[data-baseweb="select"], div[data-baseweb="textarea"] {
         border-radius: 16px !important;
         border-color: #E6DCD0 !important;
@@ -93,7 +87,6 @@ st.markdown("""
         box-shadow: 0 4px 15px rgba(92, 75, 67, 0.04) !important;
     }
 
-    /* 탭 디자인 감성 업그레이드 */
     button[data-baseweb="tab"] {
         border-radius: 14px 14px 0 0 !important;
         font-size: 1.1rem !important;
@@ -103,23 +96,24 @@ st.markdown("""
     }
 
     img {
-        border-radius: 12px !important;
+        border-radius: 10px !important;
     }
 
-    /* 캘린더 감성 박스 */
+    /* 컴팩트하고 밀착된 캘린더 격자 테이블 스타일 */
     .cal-day-box {
         background-color: #FDFBF7;
-        border-radius: 14px;
-        padding: 6px;
-        min-height: 130px;
-        border: 1px solid #EFECE6;
+        border-radius: 8px;
+        padding: 4px;
+        min-height: 95px;
+        border: 1px solid #E6DCD0;
         text-align: center;
+        margin-bottom: 4px;
     }
     .cal-day-num {
         font-weight: 700;
-        font-size: 0.85rem;
+        font-size: 0.8rem;
         color: #6D5C52;
-        margin-bottom: 4px;
+        margin-bottom: 2px;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -285,13 +279,13 @@ if not st.session_state.user_name:
     
     with center_col:
         with st.container(border=True):
-            st.markdown('<div class="luxury-title" style="text-align: center;">☕ 책 아지트</div>', unsafe_allow_html=True)
+            st.markdown('<div class="luxury-title" style="text-align: center;">📖 책 아지트 ✨</div>', unsafe_allow_html=True)
             st.markdown("<br>", unsafe_allow_html=True)
             
             auth_tab1, auth_tab2, auth_tab3 = st.tabs(["로그인", "회원가입", "게스트 입장"])
             
             with auth_tab1:
-                st.write("아지트 계정으로 로그인하세요.")
+                st.write("🌱 아지트 계정으로 로그인하세요.")
                 login_id = st.text_input("아이디", key="login_id")
                 
                 pw_col1, pw_col2 = st.columns([4, 1])
@@ -317,13 +311,13 @@ if not st.session_state.user_name:
                         if not match.empty:
                             st.session_state.user_name = login_id
                             st.session_state.my_books = load_books_for_user(login_id)
-                            st.success(f"환영합니다, {login_id}님!")
+                            st.success(f"환영합니다, {login_id}님! ✨")
                             st.rerun()
                         else:
                             st.error("아이디 또는 비밀번호가 올바르지 않습니다.")
             
             with auth_tab2:
-                st.write("새로운 아지트 계정을 만드세요.")
+                st.write("🌿 새로운 아지트 계정을 만드세요.")
                 reg_id = st.text_input("사용할 아이디", key="reg_id")
                 
                 reg_pw_col1, reg_pw_col2 = st.columns([4, 1])
@@ -351,7 +345,7 @@ if not st.session_state.user_name:
                         st.warning("아이디와 비밀번호를 모두 입력해 주세요!")
             
             with auth_tab3:
-                st.write("로그인 없이 편안하게 체험해 보세요.")
+                st.write("☕ 로그인 없이 편안하게 체험해 보세요.")
                 if st.button("🛋️ 게스트로 입장하기", use_container_width=True, type="secondary"):
                     st.session_state.user_name = "게스트"
                     st.session_state.my_books = []
@@ -406,7 +400,7 @@ def render_star_rating(rating):
 # -----------------------------------------------------------------------------
 with st.sidebar:
     with st.container(border=True):
-        st.markdown(f'<h3 style="margin-top:0; color:#5C4B43; font-size:1.2rem;">☕ 프로필 설정</h3>', unsafe_allow_html=True)
+        st.markdown(f'<h3 style="margin-top:0; color:#5C4B43; font-size:1.2rem;">🌱 프로필 설정</h3>', unsafe_allow_html=True)
         
         new_name = st.text_input("이름(닉네임) 수정", value=st.session_state.user_name)
         if new_name != st.session_state.user_name and new_name.strip():
@@ -454,7 +448,7 @@ with st.sidebar:
                     rating_options = [i / 2 for i in range(1, 11)]
                     initial_rating = st.select_slider("별점 평점 선택", options=rating_options, value=5.0)
 
-                submit_button = st.form_submit_button("내 아지트에 추가")
+                submit_button = st.form_submit_button("내 아지트에 추가 ✨")
                 
                 if submit_button:
                     is_duplicate = any(
@@ -481,7 +475,7 @@ with st.sidebar:
                         }
                         st.session_state.my_books.append(new_book)
                         save_books_for_user(st.session_state.user_name, st.session_state.my_books)
-                        st.success(f"'{selected_book['title']}' 책이 아지트에 추가되었습니다!")
+                        st.success(f"🌱 '{selected_book['title']}' 책이 아지트에 추가되었습니다!")
         else:
             st.warning("검색 결과가 없습니다.")
 
@@ -512,13 +506,13 @@ def show_book_details(book):
         
         completion_date = st.date_input("완독한 날짜", datetime.date.today(), key=f"modal_comp_date_{book['id']}")
 
-        if st.button("페이지 저장", key=f"modal_save_page_{book['id']}"):
+        if st.button("페이지 저장 📝", key=f"modal_save_page_{book['id']}"):
             book["current_page"] = new_page
             if new_page >= book["total_pages"]:
                 book["status"] = "읽기 완료"
                 book["completed_date"] = completion_date.strftime("%Y-%m-%d")
                 st.balloons()
-                st.success("축하합니다! 완독하셨습니다!")
+                st.success("🎉 축하합니다! 완독하셨습니다!")
             save_books_for_user(st.session_state.user_name, st.session_state.my_books)
             st.rerun()
 
@@ -539,13 +533,13 @@ def show_book_details(book):
             st.rerun()
 
     elif book["status"] == "위시리스트":
-        if st.button("지금 읽기 시작 📖", key=f"modal_start_{book['id']}"):
+        if st.button("지금 읽기 시작 🌿", key=f"modal_start_{book['id']}"):
             book["status"] = "읽는 중"
             save_books_for_user(st.session_state.user_name, st.session_state.my_books)
             st.rerun()
 
     st.divider()
-    st.write("💬 **인용구 / 독서 메모**")
+    st.write("📝 **인용구 / 독서 메모**")
     note_text = st.text_area(
         label="인용구 입력",
         label_visibility="collapsed",
@@ -553,10 +547,10 @@ def show_book_details(book):
         height=120,
         key=f"modal_note_{book['id']}"
     )
-    if st.button("인용구 저장", key=f"modal_save_note_{book['id']}"):
+    if st.button("인용구 저장 ✨", key=f"modal_save_note_{book['id']}"):
         book["notes"] = note_text
         save_books_for_user(st.session_state.user_name, st.session_state.my_books)
-        st.success("저장되었습니다!")
+        st.success("메모가 저장되었습니다! 📝")
         st.rerun()
 
 
@@ -581,17 +575,17 @@ with page_tab1:
                 """, unsafe_allow_html=True)
                 
         with col2:
-            st.markdown(f'<div class="luxury-title">☕ {st.session_state.user_name}의 아지트</div>', unsafe_allow_html=True)
-            st.write("따뜻한 차 한 잔과 함께 독서 목표와 기록을 쌓아가는 공간입니다.")
+            st.markdown(f'<div class="luxury-title">☕ {st.session_state.user_name}의 아지트 ✨</div>', unsafe_allow_html=True)
+            st.write("🌱 따뜻한 차 한 잔과 함께 독서 목표와 기록을 쌓아가는 아늑한 공간입니다.")
             
             total_b = len(st.session_state.my_books)
             reading_b = len([b for b in st.session_state.my_books if b['status'] == '읽는 중'])
             completed_b = len([b for b in st.session_state.my_books if b['status'] == '읽기 완료'])
             
             m1, m2, m3 = st.columns(3)
-            m1.metric("총 등록 도서", f"{total_b}권")
-            m2.metric("현재 읽는 중", f"{reading_b}권")
-            m3.metric("완독한 도서", f"{completed_b}권")
+            m1.metric("총 등록 도서 📚", f"{total_b}권")
+            m2.metric("현재 읽는 중 🌱", f"{reading_b}권")
+            m3.metric("완독한 도서 ✨", f"{completed_b}권")
 
 with page_tab2:
     shelf_tab1, shelf_tab2, shelf_tab3, shelf_tab4 = st.tabs(["📖 읽는 중", "📌 위시리스트", "📅 캘린더", "⭐ 평점"])
@@ -600,7 +594,7 @@ with page_tab2:
     with shelf_tab1:
         reading_books = [b for b in st.session_state.my_books if b["status"] == "읽는 중"]
         if not reading_books:
-            st.info("현재 읽고 있는 책이 없습니다. 사이드바에서 책을 추가해 보세요!")
+            st.info("🌱 현재 읽고 있는 책이 없습니다. 사이드바에서 책을 추가해 보세요!")
         else:
             cols = st.columns(6)
             for idx, book in enumerate(reading_books):
@@ -616,7 +610,7 @@ with page_tab2:
     with shelf_tab2:
         wish_books = [b for b in st.session_state.my_books if b["status"] == "위시리스트"]
         if not wish_books:
-            st.info("위시리스트에 담긴 책이 없습니다.")
+            st.info("📌 위시리스트에 담긴 책이 없습니다.")
         else:
             cols = st.columns(6)
             for idx, book in enumerate(wish_books):
@@ -628,9 +622,9 @@ with page_tab2:
                         if st.button("📝 기록", key=f"btn_w_{book['id']}", use_container_width=True):
                             show_book_details(book)
 
-    # 3) 캘린더
+    # 3) 캘린더 (컴팩트하고 밀착된 격자 테이블 형태)
     with shelf_tab3:
-        st.subheader("📅 완독 기록 캘린더")
+        st.subheader("📅 완독 기록 캘린더 ✨")
         
         c_year_col, c_month_col = st.columns(2)
         with c_year_col:
@@ -663,8 +657,8 @@ with page_tab2:
                             matched_book = completed_map[date_str]
                             st.markdown(f"""
                                 <div class="cal-day-box">
-                                    <div class="cal-day-num">{day}일 🎉</div>
-                                    <img src="{matched_book['cover_url']}" style="width: 48px; border-radius: 4px; margin-top: 2px;">
+                                    <div class="cal-day-num">{day} 🎉</div>
+                                    <img src="{matched_book['cover_url']}" style="width: 38px; border-radius: 4px; margin-top: 1px;">
                                 </div>
                             """, unsafe_allow_html=True)
                         else:
@@ -679,7 +673,7 @@ with page_tab2:
         st.subheader("⭐ 완독 도서 평점 모아보기")
         completed_books = [b for b in st.session_state.my_books if b["status"] == "읽기 완료"]
         if not completed_books:
-            st.info("아직 완독한 책이 없습니다.")
+            st.info("✨ 아직 완독한 책이 없습니다.")
         else:
             completed_books.sort(key=lambda x: x.get("rating", 0), reverse=True)
             cols = st.columns(4)
