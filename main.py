@@ -99,59 +99,23 @@ st.markdown("""
         border-radius: 4px !important;
     }
 
-    /* 손그림 다이어리 스타일 밀착 격자 CSS */
-    .diary-calendar-box {
-        background-color: #FFFFFF;
-        border: 2px solid #5C4B43;
-        border-radius: 14px;
-        padding: 16px;
-        max-width: 500px;
-        margin: 0 auto;
-        box-shadow: 4px 6px 0px rgba(92, 75, 67, 0.1);
-    }
-
-    .diary-grid {
-        display: grid;
-        grid-template-columns: repeat(7, 1fr);
-        border-top: 1.5px solid #5C4B43;
-        border-left: 1.5px solid #5C4B43;
-        background-color: #FFFFFF;
-    }
-
-    .diary-header-cell {
-        border-right: 1.5px solid #5C4B43;
-        border-bottom: 1.5px solid #5C4B43;
-        background-color: #F4ECE1;
-        text-align: center;
-        font-weight: 700;
-        font-size: 0.8rem;
-        color: #5C4B43;
-        padding: 6px 0;
-    }
-
+    /* 다이어리 날짜 칸 스타일 */
     .diary-cell {
-        border-right: 1.5px solid #5C4B43;
-        border-bottom: 1.5px solid #5C4B43;
-        min-height: 70px;
-        padding: 2px;
-        text-align: center;
         background-color: #FFFFFF;
+        border: 1.5px solid #5C4B43;
+        border-radius: 6px;
+        padding: 4px;
+        min-height: 75px;
+        text-align: center;
+        margin-bottom: 4px;
     }
-
-    .diary-cell-empty {
-        border-right: 1.5px solid #5C4B43;
-        border-bottom: 1.5px solid #5C4B43;
-        min-height: 70px;
-        background-color: #FCFBF9;
-    }
-
     .diary-day-num {
         font-weight: 700;
-        font-size: 0.7rem;
+        font-size: 0.75rem;
         color: #6D5C52;
         text-align: left;
         padding-left: 2px;
-        margin-bottom: 1px;
+        margin-bottom: 2px;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -666,7 +630,7 @@ with page_tab2:
                         if st.button("📝 기록", key=f"btn_w_{book['id']}", use_container_width=True):
                             show_book_details(book)
 
-    # 3) 손그림 다이어리 스타일 밀착 격자 캘린더 (HTML 태그 노출 오류 원천 차단 버전)
+    # 3) 스트림릿 컴포넌트 기반 완벽한 다이어리 캘린더 (HTML 에러 원천 차단)
     with shelf_tab3:
         st.subheader("📅 완독 기록 다이어리 ✨")
         
@@ -690,38 +654,52 @@ with page_tab2:
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        month_calendar = calendar.monthcalendar(st.session_state.cal_year, st.session_state.cal_month)
-        week_days = ["S", "M", "T", "W", "T", "F", "S"]
+        # 다이어리 컨테이너 박스
+        diary_box = st.container(border=True)
+        with diary_box:
+            st.markdown(f"<div style='text-align: center; font-size: 1.1rem; font-weight: 800; color: #5C4B43; margin-bottom: 8px;'>📓 {st.session_state.cal_year} . {months_short[st.session_state.cal_month - 1]} ({selected_m_name})</div>", unsafe_allow_html=True)
+            
+            month_calendar = calendar.monthcalendar(st.session_state.cal_year, st.session_state.cal_month)
+            week_days = ["S", "M", "T", "W", "T", "F", "S"]
 
-        completed_map = {}
-        for b in st.session_state.my_books:
-            if b.get("status") == "읽기 완료" and b.get("completed_date"):
-                completed_map[b["completed_date"]] = b
+            completed_map = {}
+            for b in st.session_state.my_books:
+                if b.get("status") == "읽기 완료" and b.get("completed_date"):
+                    completed_map[b["completed_date"]] = b
 
-        # HTML 문자열을 줄바꿈 없이 하나의 완벽한 한 줄 문자열로 조립하여 태그 노출 방지
-        grid_html = f"<div class=\"diary-calendar-box\"><div style=\"text-align: center; font-size: 1.1rem; font-weight: 800; color: #5C4B43; margin-bottom: 10px;\">📓 {st.session_state.cal_year} . {months_short[st.session_state.cal_month - 1]} ({selected_m_name})</div><div class=\"diary-grid\">"
+            # 요일 헤더 (S M T W T F S)
+            d_cols = st.columns(7)
+            for idx, d_name in enumerate(week_days):
+                d_cols[idx].markdown(f"<div style='text-align: center; font-weight: 700; color: #5C4B43; font-size: 0.8rem; background-color: #F4ECE1; padding: 4px; border-radius: 4px;'>{d_name}</div>", unsafe_allow_html=True)
 
-        # 요일 헤더
-        for d_name in week_days:
-            grid_html += f"<div class=\"diary-header-cell\">{d_name}</div>"
+            st.markdown("<div style='margin-top: 4px;'></div>", unsafe_allow_html=True)
 
-        # 날짜 셀
-        for week in month_calendar:
-            for day in week:
-                if day == 0:
-                    grid_html += "<div class=\"diary-cell-empty\"></div>"
-                else:
-                    date_str = f"{st.session_state.cal_year}-{st.session_state.cal_month:02d}-{day:02d}"
-                    if date_str in completed_map:
-                        matched_book = completed_map[date_str]
-                        cover = matched_book['cover_url']
-                        grid_html += f"<div class=\"diary-cell\"><div class=\"diary-day-num\">{day} 🎉</div><div style=\"text-align: center;\"><img src=\"{cover}\" style=\"width: 26px; height: 35px; object-fit: cover; border-radius: 3px; margin-top: 1px;\"></div></div>"
-                    else:
-                        grid_html += f"<div class=\"diary-cell\"><div class=\"diary-day-num\">{day}</div></div>"
-
-        grid_html += "</div></div>"
-
-        st.markdown(grid_html, unsafe_allow_html=True)
+            # 날짜 그리드 출력
+            for week in month_calendar:
+                w_cols = st.columns(7)
+                for idx, day in enumerate(week):
+                    with w_cols[idx]:
+                        if day == 0:
+                            st.markdown("<div class='diary-cell' style='background-color: #FCFBF9; border-color: #E6DCD0;'></div>", unsafe_allow_html=True)
+                        else:
+                            date_str = f"{st.session_state.cal_year}-{st.session_state.cal_month:02d}-{day:02d}"
+                            if date_str in completed_map:
+                                matched_book = completed_map[date_str]
+                                cover = matched_book['cover_url']
+                                st.markdown(f"""
+                                    <div class='diary-cell'>
+                                        <div class='diary-day-num'>{day} 🎉</div>
+                                        <div style='text-align: center;'>
+                                            <img src='{cover}' style='width: 24px; height: 32px; object-fit: cover; border-radius: 2px;'>
+                                        </div>
+                                    </div>
+                                """, unsafe_allow_html=True)
+                            else:
+                                st.markdown(f"""
+                                    <div class='diary-cell'>
+                                        <div class='diary-day-num'>{day}</div>
+                                    </div>
+                                """, unsafe_allow_html=True)
 
     # 4) 평점 모아보기
     with shelf_tab4:
