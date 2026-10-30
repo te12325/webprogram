@@ -99,45 +99,16 @@ st.markdown("""
         border-radius: 6px !important;
     }
 
-    /* 손그림 다이어리 스타일 밀착 격자 캘린더 CSS */
-    .diary-calendar-container {
-        background-color: #FFFFFF;
-        border: 2px solid #5C4B43;
-        border-radius: 16px;
-        padding: 20px;
-        box-shadow: 4px 6px 0px rgba(92, 75, 67, 0.15);
-        max-width: 650px;
-        margin: 0 auto;
-    }
-    
-    .diary-grid {
-        display: grid;
-        grid-template-columns: repeat(7, 1fr);
-        border-top: 1.5px solid #5C4B43;
-        border-left: 1.5px solid #5C4B43;
-        background-color: #FFFFFF;
-    }
-
+    /* 컴팩트한 다이어리 캘린더 날짜 박스 */
     .diary-cell {
-        border-right: 1.5px solid #5C4B43;
-        border-bottom: 1.5px solid #5C4B43;
-        min-height: 85px;
-        padding: 4px;
-        text-align: center;
         background-color: #FFFFFF;
-    }
-
-    .diary-header-cell {
-        border-right: 1.5px solid #5C4B43;
-        border-bottom: 1.5px solid #5C4B43;
-        padding: 6px;
+        border: 1px solid #5C4B43;
+        border-radius: 8px;
+        padding: 4px;
+        min-height: 80px;
         text-align: center;
-        font-weight: 700;
-        font-size: 0.85rem;
-        color: #5C4B43;
-        background-color: #F4ECE1;
+        margin-bottom: 6px;
     }
-
     .diary-day-num {
         font-weight: 700;
         font-size: 0.75rem;
@@ -659,90 +630,75 @@ with page_tab2:
                         if st.button("📝 기록", key=f"btn_w_{book['id']}", use_container_width=True):
                             show_book_details(book)
 
-    # 3) 손그림 다이어리 스타일 캘린더
+    # 3) 컴팩트한 다이어리 스타일 캘린더 (스트림릿 레이아웃 기반)
     with shelf_tab3:
         st.subheader("📅 완독 기록 다이어리 ✨")
         
-        # 연도 선택 바
-        y_col1, y_col2, y_col3 = st.columns([1, 2, 1])
-        with y_col2:
+        # 연도 및 월 선택 바
+        c_col1, c_col2 = st.columns([1, 2])
+        with c_col1:
             st.session_state.cal_year = st.selectbox(
                 "연도 선택", 
                 list(range(2026, 2036)), 
-                index=list(range(2026, 2036)).index(st.session_state.cal_year) if st.session_state.cal_year in range(2026, 2036) else 0,
-                label_visibility="collapsed"
+                index=list(range(2026, 2036)).index(st.session_state.cal_year) if st.session_state.cal_year in range(2026, 2036) else 0
             )
+        with c_col2:
+            months_full = ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"]
+            selected_m_name = st.selectbox(
+                "월 선택",
+                months_full,
+                index=st.session_state.cal_month - 1
+            )
+            st.session_state.cal_month = months_full.index(selected_m_name) + 1
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # 상단 월 선택 바 (JAN ~ DEC 버튼 형태 나열)
-        months_short = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"]
-        m_cols = st.columns(6)
-        for i in range(12):
-            m_num = i + 1
-            col_idx = i % 6
-            with m_cols[col_idx]:
-                btn_label = f"📌 {months_short[i]}" if st.session_state.cal_month == m_num else months_short[i]
-                if st.button(btn_label, key=f"month_btn_{m_num}", use_container_width=True):
-                    st.session_state.cal_month = m_num
-                    st.rerun()
+        # 컴팩트 다이어리 박스 생성 (가운데 정렬 및 적당한 크기)
+        diary_container = st.container(border=True)
+        with diary_container:
+            st.markdown(f"<div style='text-align: center; font-size: 1.1rem; font-weight: 800; color: #5C4B43; margin-bottom: 10px;'>📓 {st.session_state.cal_year} . {selected_m_name}</div>", unsafe_allow_html=True)
+            
+            month_calendar = calendar.monthcalendar(st.session_state.cal_year, st.session_state.cal_month)
+            week_days = ["일", "월", "화", "수", "목", "금", "토"]
+            
+            completed_map = {}
+            for b in st.session_state.my_books:
+                if b.get("status") == "읽기 완료" and b.get("completed_date"):
+                    completed_map[b["completed_date"]] = b
 
-        st.markdown("<br>", unsafe_allow_html=True)
+            # 요일 헤더 7열
+            d_cols = st.columns(7)
+            for idx, d_name in enumerate(week_days):
+                d_cols[idx].markdown(f"<div style='text-align: center; font-weight: 700; color: #5C4B43; font-size: 0.85rem;'>{d_name}</div>", unsafe_allow_html=True)
 
-        # 다이어리 컨테이너 시작 (손그림 박스 및 격자)
-        month_names_kr = ["", "1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"]
-        
-        # 캘린더 HTML 데이터 생성
-        month_calendar = calendar.monthcalendar(st.session_state.cal_year, st.session_state.cal_month)
-        week_days = ["S", "M", "T", "W", "T", "F", "S"]
+            st.divider()
 
-        completed_map = {}
-        for b in st.session_state.my_books:
-            if b.get("status") == "읽기 완료" and b.get("completed_date"):
-                completed_map[b["completed_date"]] = b
-
-        # HTML 그리드 구성
-        grid_html = f"""
-        <div class="diary-calendar-container">
-            <div style="text-align: center; font-size: 1.3rem; font-weight: 800; color: #5C4B43; margin-bottom: 12px;">
-                📓 {st.session_state.cal_year} . {months_short[st.session_state.cal_month - 1]} ({month_names_kr[st.session_state.cal_month]})
-            </div>
-            <div class="diary-grid">
-        """
-
-        # 요일 헤더 (S M T W T F S)
-        for d_name in week_days:
-            grid_html += f'<div class="diary-header-cell">{d_name}</div>'
-
-        # 날짜 셀 채우기
-        for week in month_calendar:
-            for day in week:
-                if day == 0:
-                    grid_html += '<div class="diary-cell" style="background-color: #FCFBF9;"></div>'
-                else:
-                    date_str = f"{st.session_state.cal_year}-{st.session_state.cal_month:02d}-{day:02d}"
-                    if date_str in completed_map:
-                        matched_book = completed_map[date_str]
-                        cover = matched_book['cover_url']
-                        grid_html += f'''
-                        <div class="diary-cell">
-                            <div class="diary-day-num">{day} 🎉</div>
-                            <img src="{cover}" style="width: 32px; height: 45px; object-fit: cover; border-radius: 3px; margin-top: 1px;">
-                        </div>
-                        '''
-                    else:
-                        grid_html += f'''
-                        <div class="diary-cell">
-                            <div class="diary-day-num">{day}</div>
-                        </div>
-                        '''
-
-        grid_html += """
-            </div>
-        </div>
-        """
-
-        st.markdown(grid_html, unsafe_allow_html=True)
+            # 날짜 그리드 행별 렌더링
+            for week in month_calendar:
+                w_cols = st.columns(7)
+                for idx, day in enumerate(week):
+                    with w_cols[idx]:
+                        if day == 0:
+                            st.markdown("<div class='diary-cell' style='background-color: #FAF7F2; border: none;'></div>", unsafe_allow_html=True)
+                        else:
+                            date_str = f"{st.session_state.cal_year}-{st.session_state.cal_month:02d}-{day:02d}"
+                            if date_str in completed_map:
+                                matched_book = completed_map[date_str]
+                                cover = matched_book['cover_url']
+                                st.markdown(f"""
+                                    <div class='diary-cell'>
+                                        <div class='diary-day-num'>{day} 🎉</div>
+                                        <div style='text-align: center;'>
+                                            <img src='{cover}' style='width: 32px; height: 42px; object-fit: cover; border-radius: 3px;'>
+                                        </div>
+                                    </div>
+                                """, unsafe_allow_html=True)
+                            else:
+                                st.markdown(f"""
+                                    <div class='diary-cell'>
+                                        <div class='diary-day-num'>{day}</div>
+                                    </div>
+                                """, unsafe_allow_html=True)
 
     # 4) 평점 모아보기
     with shelf_tab4:
