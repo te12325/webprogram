@@ -9,7 +9,7 @@ import base64
 from github import Github, GithubException
 
 # -----------------------------------------------------------------------------
-# 1. 페이지 기본 설정 및 디자인 (CSS) 적용
+# 1. 페이지 기본 설정 및 디자인 (감성 북카페 스타일 CSS) 적용
 # -----------------------------------------------------------------------------
 st.set_page_config(
     page_title="책 아지트",
@@ -19,81 +19,107 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-    @import url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_two@1.0/NanumSquareRound.woff');
+    /* 구글 웹폰트 및 Pretendard 가독성 적용 */
+    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
 
     html, body, [class*="css"], div, span, label, input, button, textarea {
-        font-family: 'NanumSquareRound', sans-serif !important;
+        font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif !important;
+    }
+
+    /* 전체 배경 및 메인 컬러 톤 조정 (따뜻한 아이보리 북카페 느낌) */
+    .stApp {
+        background-color: #FAF7F2 !important;
     }
 
     .luxury-title {
-        font-family: 'NanumSquareRound', sans-serif !important;
-        font-size: 2.3rem !important;
+        font-family: 'Pretendard Variable', Pretendard, sans-serif !important;
+        font-size: 2.4rem !important;
         font-weight: 800 !important;
-        color: #4A3E3D !important;
+        color: #5C4B43 !important;
         margin-bottom: 0px !important;
+        letter-spacing: -0.5px;
     }
 
+    /* 사이드바 감성 디자인 */
     [data-testid="stSidebar"] div[data-testid="stVerticalBlockBorderWrapper"]:first-of-type > div {
-        background: linear-gradient(135deg, #FFE4E6 0%, #F3E8FF 50%, #E0E7FF 100%) !important;
-        border-radius: 20px !important;
-        border: 1px solid #F3D2DF !important;
-        padding: 18px !important;
-        box-shadow: 0 4px 15px rgba(243, 210, 223, 0.4) !important;
+        background: linear-gradient(135deg, #FDFBF7 0%, #F4ECE1 100%) !important;
+        border-radius: 24px !important;
+        border: 1px solid #E6DCD0 !important;
+        padding: 22px !important;
+        box-shadow: 0 6px 20px rgba(92, 75, 67, 0.06) !important;
     }
 
+    /* 책장 카드 컨테이너 (우드 아이보리 톤 & 둥근 모서리 + 부드러운 그림자) */
     [data-testid="stVerticalBlockBorderWrapper"] > div {
-        border-radius: 14px !important;
-        padding: 10px !important;
+        background-color: #FFFFFF !important;
+        border-radius: 20px !important;
+        border: 1px solid #EFECE6 !important;
+        padding: 16px !important;
+        box-shadow: 0 4px 12px rgba(92, 75, 67, 0.04) !important;
         text-align: center !important;
     }
 
+    /* 버튼 스타일링 (부드러운 파스텔 우드 브라운 계열) */
     div.stButton > button {
-        border-radius: 10px !important;
-        font-weight: bold !important;
+        background-color: #8C7A6B !important;
+        color: #FFFFFF !important;
+        border-radius: 14px !important;
+        font-weight: 600 !important;
         border: none !important;
-        padding: 4px 8px !important;
-        font-size: 0.85rem !important;
+        padding: 8px 16px !important;
         transition: all 0.2s ease-in-out;
+        box-shadow: 0 3px 8px rgba(140, 122, 107, 0.2);
     }
     div.stButton > button:hover {
-        transform: translateY(-1px);
+        background-color: #7A695B !important;
+        transform: translateY(-2px);
     }
 
+    /* 입력창 및 셀렉트박스 모던하게 둥글리기 */
     div[data-baseweb="input"], div[data-baseweb="select"], div[data-baseweb="textarea"] {
-        border-radius: 14px !important;
+        border-radius: 16px !important;
+        border-color: #E6DCD0 !important;
     }
     input, textarea {
-        border-radius: 14px !important;
+        border-radius: 16px !important;
+        background-color: #FCFBF9 !important;
     }
 
     [data-testid="stForm"] {
-        border-radius: 20px !important;
+        background-color: #FFFFFF !important;
+        border-radius: 24px !important;
+        border: 1px solid #EFECE6 !important;
+        padding: 20px !important;
+        box-shadow: 0 4px 15px rgba(92, 75, 67, 0.04) !important;
     }
 
+    /* 탭 디자인 감성 업그레이드 */
     button[data-baseweb="tab"] {
-        border-radius: 16px 16px 0 0 !important;
-        font-size: 1.2rem !important;
-        font-weight: bold !important;
+        border-radius: 14px 14px 0 0 !important;
+        font-size: 1.1rem !important;
+        font-weight: 700 !important;
+        color: #7A695B !important;
         padding: 12px 24px !important;
     }
 
     img {
-        border-radius: 6px !important;
+        border-radius: 12px !important;
     }
 
+    /* 캘린더 감성 박스 */
     .cal-day-box {
-        background-color: #F8F9FA;
-        border-radius: 10px;
-        padding: 4px;
-        min-height: 125px;
-        border: 1px solid #E9ECEF;
+        background-color: #FDFBF7;
+        border-radius: 14px;
+        padding: 6px;
+        min-height: 130px;
+        border: 1px solid #EFECE6;
         text-align: center;
     }
     .cal-day-num {
-        font-weight: bold;
-        font-size: 0.8rem;
-        color: #495057;
-        margin-bottom: 2px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        color: #6D5C52;
+        margin-bottom: 4px;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -259,13 +285,13 @@ if not st.session_state.user_name:
     
     with center_col:
         with st.container(border=True):
-            st.markdown('<div class="luxury-title" style="text-align: center;">📚 책 아지트</div>', unsafe_allow_html=True)
+            st.markdown('<div class="luxury-title" style="text-align: center;">☕ 책 아지트</div>', unsafe_allow_html=True)
             st.markdown("<br>", unsafe_allow_html=True)
             
             auth_tab1, auth_tab2, auth_tab3 = st.tabs(["로그인", "회원가입", "게스트 입장"])
             
             with auth_tab1:
-                st.write("계정으로 로그인하세요.")
+                st.write("아지트 계정으로 로그인하세요.")
                 login_id = st.text_input("아이디", key="login_id")
                 
                 pw_col1, pw_col2 = st.columns([4, 1])
@@ -282,7 +308,7 @@ if not st.session_state.user_name:
                         st.session_state.show_login_pw = not st.session_state.show_login_pw
                         st.rerun()
                 
-                if st.button("로그인하기 🚀", use_container_width=True):
+                if st.button("로그인하기 ☕", use_container_width=True):
                     users_df = load_users_from_github()
                     if users_df.empty:
                         st.error("등록된 회원이 없거나 깃허브 연결을 확인해 주세요.")
@@ -297,7 +323,7 @@ if not st.session_state.user_name:
                             st.error("아이디 또는 비밀번호가 올바르지 않습니다.")
             
             with auth_tab2:
-                st.write("새로운 계정을 만드세요.")
+                st.write("새로운 아지트 계정을 만드세요.")
                 reg_id = st.text_input("사용할 아이디", key="reg_id")
                 
                 reg_pw_col1, reg_pw_col2 = st.columns([4, 1])
@@ -325,8 +351,8 @@ if not st.session_state.user_name:
                         st.warning("아이디와 비밀번호를 모두 입력해 주세요!")
             
             with auth_tab3:
-                st.write("로그인 없이 간편하게 체험해보세요.")
-                if st.button("🙋‍♂️ 게스트로 입장하기", use_container_width=True, type="secondary"):
+                st.write("로그인 없이 편안하게 체험해 보세요.")
+                if st.button("🛋️ 게스트로 입장하기", use_container_width=True, type="secondary"):
                     st.session_state.user_name = "게스트"
                     st.session_state.my_books = []
                     st.rerun()
@@ -380,7 +406,7 @@ def render_star_rating(rating):
 # -----------------------------------------------------------------------------
 with st.sidebar:
     with st.container(border=True):
-        st.markdown(f'<h3 style="margin-top:0; color:#4A3E3D; font-size:1.2rem;">👤 프로필 설정</h3>', unsafe_allow_html=True)
+        st.markdown(f'<h3 style="margin-top:0; color:#5C4B43; font-size:1.2rem;">☕ 프로필 설정</h3>', unsafe_allow_html=True)
         
         new_name = st.text_input("이름(닉네임) 수정", value=st.session_state.user_name)
         if new_name != st.session_state.user_name and new_name.strip():
@@ -428,7 +454,7 @@ with st.sidebar:
                     rating_options = [i / 2 for i in range(1, 11)]
                     initial_rating = st.select_slider("별점 평점 선택", options=rating_options, value=5.0)
 
-                submit_button = st.form_submit_button("내 책장에 추가")
+                submit_button = st.form_submit_button("내 아지트에 추가")
                 
                 if submit_button:
                     is_duplicate = any(
@@ -455,7 +481,7 @@ with st.sidebar:
                         }
                         st.session_state.my_books.append(new_book)
                         save_books_for_user(st.session_state.user_name, st.session_state.my_books)
-                        st.success(f"'{selected_book['title']}' 책이 저장소에 추가되었습니다!")
+                        st.success(f"'{selected_book['title']}' 책이 아지트에 추가되었습니다!")
         else:
             st.warning("검색 결과가 없습니다.")
 
@@ -463,7 +489,7 @@ with st.sidebar:
 # -----------------------------------------------------------------------------
 # 7. 도서 상세정보 팝업 모달
 # -----------------------------------------------------------------------------
-@st.dialog("📚 도서 상세 및 기록 관리")
+@st.dialog("☕ 도서 상세 및 기록 관리")
 def show_book_details(book):
     st.image(book["cover_url"], width=150)
     st.subheader(book["title"])
@@ -537,7 +563,7 @@ def show_book_details(book):
 # -----------------------------------------------------------------------------
 # 8. 메인 화면 탭 구역
 # -----------------------------------------------------------------------------
-page_tab1, page_tab2 = st.tabs([f"👤 {st.session_state.user_name}의 아지트", "📚 내 책장"])
+page_tab1, page_tab2 = st.tabs([f"☕ {st.session_state.user_name}의 아지트", "📚 내 책장"])
 
 with page_tab1:
     with st.container(border=True):
@@ -549,14 +575,14 @@ with page_tab1:
                 st.image(image, width=130)
             else:
                 st.markdown("""
-                    <div style="font-size: 80px; text-align: center; background-color: #F3E8FF; border-radius: 50%; width: 120px; height: 120px; line-height: 120px;">
-                        👤
+                    <div style="font-size: 80px; text-align: center; background-color: #F4ECE1; border-radius: 50%; width: 120px; height: 120px; line-height: 120px;">
+                        ☕
                     </div>
                 """, unsafe_allow_html=True)
                 
         with col2:
-            st.markdown(f'<div class="luxury-title">📚 {st.session_state.user_name}의 아지트</div>', unsafe_allow_html=True)
-            st.write("독서 목표와 기록을 차곡차곡 쌓아가는 공간입니다.")
+            st.markdown(f'<div class="luxury-title">☕ {st.session_state.user_name}의 아지트</div>', unsafe_allow_html=True)
+            st.write("따뜻한 차 한 잔과 함께 독서 목표와 기록을 쌓아가는 공간입니다.")
             
             total_b = len(st.session_state.my_books)
             reading_b = len([b for b in st.session_state.my_books if b['status'] == '읽는 중'])
@@ -581,8 +607,8 @@ with page_tab2:
                 with cols[idx % 6]:
                     with st.container(border=True):
                         st.image(book["cover_url"], width=95)
-                        st.markdown(f"<div style='font-size: 0.8rem; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 4px;'>{book['title']}</div>", unsafe_allow_html=True)
-                        st.caption(f"<div style='font-size: 0.7rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px;'>{book['author']}</div>", unsafe_allow_html=True)
+                        st.markdown(f"<div style='font-size: 0.8rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 6px; color: #5C4B43;'>{book['title']}</div>", unsafe_allow_html=True)
+                        st.caption(f"<div style='font-size: 0.7rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 6px; color: #8C7A6B;'>{book['author']}</div>", unsafe_allow_html=True)
                         if st.button("📝 기록", key=f"btn_r_{book['id']}", use_container_width=True):
                             show_book_details(book)
 
@@ -597,12 +623,12 @@ with page_tab2:
                 with cols[idx % 6]:
                     with st.container(border=True):
                         st.image(book["cover_url"], width=95)
-                        st.markdown(f"<div style='font-size: 0.8rem; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 4px;'>{book['title']}</div>", unsafe_allow_html=True)
-                        st.caption(f"<div style='font-size: 0.7rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px;'>{book['author']}</div>", unsafe_allow_html=True)
+                        st.markdown(f"<div style='font-size: 0.8rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 6px; color: #5C4B43;'>{book['title']}</div>", unsafe_allow_html=True)
+                        st.caption(f"<div style='font-size: 0.7rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 6px; color: #8C7A6B;'>{book['author']}</div>", unsafe_allow_html=True)
                         if st.button("📝 기록", key=f"btn_w_{book['id']}", use_container_width=True):
                             show_book_details(book)
 
-    # 3) 캘린더 (HTML 태그로 테두리 칸 내부에 표지 이미지를 완벽하게 포함)
+    # 3) 캘린더
     with shelf_tab3:
         st.subheader("📅 완독 기록 캘린더")
         
@@ -648,6 +674,7 @@ with page_tab2:
                                 </div>
                             """, unsafe_allow_html=True)
 
+    # 4) 평점 모아보기
     with shelf_tab4:
         st.subheader("⭐ 완독 도서 평점 모아보기")
         completed_books = [b for b in st.session_state.my_books if b["status"] == "읽기 완료"]
@@ -660,7 +687,7 @@ with page_tab2:
                 with cols[idx % 4]:
                     with st.container(border=True):
                         st.image(book["cover_url"], width=100)
-                        st.markdown(f"**{book['title']}**")
-                        st.caption(render_star_rating(book.get("rating", 5.0)))
+                        st.markdown(f"<div style='font-size: 0.85rem; font-weight: 700; margin-top: 6px; color: #5C4B43;'>{book['title']}</div>", unsafe_allow_html=True)
+                        st.caption(f"<div style='color: #8C7A6B;'>{render_star_rating(book.get('rating', 5.0))}</div>", unsafe_allow_html=True)
                         if st.button("📝 기록", key=f"btn_c_{book['id']}", use_container_width=True):
                             show_book_details(book)
