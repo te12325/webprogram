@@ -46,13 +46,21 @@ st.markdown("""
         box-shadow: 0 6px 20px rgba(92, 75, 67, 0.06) !important;
     }
 
+    /* 도서 카드 전체 감싸는 박스 스타일 (아늑한 북카페 감성 테두리 & 그림자) */
     [data-testid="stVerticalBlockBorderWrapper"] > div {
         background-color: #FFFFFF !important;
         border-radius: 20px !important;
-        border: 1px solid #EFECE6 !important;
+        border: 1.5px solid #E6DCD0 !important;
         padding: 16px !important;
-        box-shadow: 0 4px 12px rgba(92, 75, 67, 0.04) !important;
+        box-shadow: 0 6px 16px rgba(92, 75, 67, 0.06) !important;
         text-align: center !important;
+        transition: all 0.2s ease-in-out;
+    }
+    
+    [data-testid="stVerticalBlockBorderWrapper"] > div:hover {
+        border-color: #8C7A6B !important;
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(92, 75, 67, 0.12) !important;
     }
 
     div.stButton > button {
@@ -96,7 +104,8 @@ st.markdown("""
     }
 
     img {
-        border-radius: 4px !important;
+        border-radius: 6px !important;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.1);
     }
 
     /* 다이어리 날짜 칸 스타일 */
