@@ -1,14 +1,3 @@
-이미 '읽기 완료'에 추가되어 책장에 꽂힌 책이라도 언제든지 별점 평점을 자유롭게 수정할 수 있도록 기능을 완벽하게 보완했습니다!
-
-도서 카드의 **[📝 기록] 버튼을 눌러 나오는 상세 팝업창**에서 슬라이더로 원하는 평점을 고른 뒤 **[평점 저장하기 ⭐]** 버튼을 누르면, 내가 수정한 평점이 실시간으로 반영되어 평점 목록과 아지트에 안전하게 저장됩니다.
-
-깃허브(GitHub)의 `main.py` 파일에 아래 전체 코드를 그대로 복사해서 덮어씌워 주시면 됩니다.
-
----
-
-### 📄 `main.py` 전체 완성 코드 (완독 도서 평점 언제든 수정 가능 버전)
-
-```python
 import streamlit as st
 import pandas as pd
 import datetime
@@ -30,7 +19,7 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+    @import url('[https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css](https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css)');
 
     html, body, [class*="css"], div, span, label, input, button, textarea {
         font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif !important;
@@ -427,11 +416,11 @@ def search_book_kakao(query):
         return [{
             "title": f"[API키 미설정] {query}",
             "authors": ["설정 확인 필요"],
-            "thumbnail": "https://via.placeholder.com/150x200.png?text=No+API+Key",
+            "thumbnail": "[https://via.placeholder.com/150x200.png?text=No+API+Key](https://via.placeholder.com/150x200.png?text=No+API+Key)",
             "total_pages": 300
         }]
     
-    url = f"https://dapi.kakao.com/v3/search/book?query={query}"
+    url = f"[https://dapi.kakao.com/v3/search/book?query=](https://dapi.kakao.com/v3/search/book?query=){query}"
     headers = {"Authorization": f"KakaoAK {KAKAO_API_KEY}"}
     
     try:
@@ -443,7 +432,7 @@ def search_book_kakao(query):
                 books.append({
                     "title": item.get("title", "제목 없음"),
                     "authors": item.get("authors", ["저자 미상"]),
-                    "thumbnail": item.get("thumbnail", "https://via.placeholder.com/150x200.png?text=No+Cover"),
+                    "thumbnail": item.get("thumbnail", "[https://via.placeholder.com/150x200.png?text=No+Cover](https://via.placeholder.com/150x200.png?text=No+Cover)"),
                     "total_pages": 300
                 })
             return books
@@ -597,7 +586,6 @@ def show_book_details(book):
             
         st.write(f"**현재 내 평점:** {render_star_rating(current_rating)}")
         
-        # 언제든지 평점을 수정할 수 있는 슬라이더와 저장 버튼
         new_rating = st.select_slider(
             "평점 수정 (1~5점)",
             options=RATING_OPTIONS,
@@ -632,7 +620,6 @@ def show_book_details(book):
         st.success("메모가 저장되었습니다! 📝")
         st.rerun()
 
-    # 삭제 버튼
     st.divider()
     if st.button("🗑️ 삭제하기", key=f"modal_delete_{book['id']}", use_container_width=True):
         st.session_state.my_books = [b for b in st.session_state.my_books if b["id"] != book["id"]]
@@ -691,7 +678,6 @@ with page_tab1:
 with page_tab2:
     shelf_tab1, shelf_tab2, shelf_tab3, shelf_tab4 = st.tabs(["📖 읽는 중", "📌 위시리스트", "📅 캘린더", "⭐ 평점"])
     
-    # 1) 읽는 중
     with shelf_tab1:
         reading_books = [b for b in st.session_state.my_books if b["status"] == "읽는 중"]
         if not reading_books:
@@ -707,7 +693,6 @@ with page_tab2:
                         if st.button("📝 기록", key=f"btn_r_{book['id']}", use_container_width=True):
                             show_book_details(book)
 
-    # 2) 위시리스트
     with shelf_tab2:
         wish_books = [b for b in st.session_state.my_books if b["status"] == "위시리스트"]
         if not wish_books:
@@ -723,7 +708,6 @@ with page_tab2:
                         if st.button("📝 기록", key=f"btn_w_{book['id']}", use_container_width=True):
                             show_book_details(book)
 
-    # 3) 완독 기록 다이어리 캘린더
     with shelf_tab3:
         st.subheader("📅 완독 기록 다이어리 ✨")
         
@@ -790,7 +774,6 @@ with page_tab2:
                                     </div>
                                 """, unsafe_allow_html=True)
 
-    # 4) 평점 모아보기
     with shelf_tab4:
         st.subheader("⭐ 완독 도서 평점 모아보기")
         completed_books = [b for b in st.session_state.my_books if b["status"] == "읽기 완료"]
@@ -807,5 +790,3 @@ with page_tab2:
                         st.caption(f"<div style='color: #8C7A6B;'>{render_star_rating(book.get('rating', 5.0))}</div>", unsafe_allow_html=True)
                         if st.button("📝 기록", key=f"btn_c_{book['id']}", use_container_width=True):
                             show_book_details(book)
-
-```
