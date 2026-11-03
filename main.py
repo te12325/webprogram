@@ -3,6 +3,7 @@ import pandas as pd
 import datetime
 import calendar
 import requests
+import urllib.parse
 from PIL import Image
 from io import BytesIO, StringIO
 import base64
@@ -19,7 +20,7 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-    @import url('[https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css](https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css)');
+    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
 
     html, body, [class*="css"], div, span, label, input, button, textarea {
         font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif !important;
@@ -155,13 +156,13 @@ if "cal_month" not in st.session_state:
     st.session_state.cal_month = datetime.date.today().month
 
 try:
-    KAKAO_API_KEY = st.secrets["KAKAO_API_KEY"]
+    KAKAO_API_KEY = str(st.secrets["KAKAO_API_KEY"]).strip()
 except (KeyError, FileNotFoundError):
     KAKAO_API_KEY = ""
 
 try:
-    GITHUB_TOKEN = st.secrets["GITHUB_TOKEN"]
-    GITHUB_REPO = st.secrets["GITHUB_REPO"]
+    GITHUB_TOKEN = str(st.secrets["GITHUB_TOKEN"]).strip()
+    GITHUB_REPO = str(st.secrets["GITHUB_REPO"]).strip()
 except (KeyError, FileNotFoundError):
     GITHUB_TOKEN = ""
     GITHUB_REPO = ""
@@ -416,15 +417,17 @@ def search_book_kakao(query):
         return [{
             "title": f"[API키 미설정] {query}",
             "authors": ["설정 확인 필요"],
-            "thumbnail": "[https://via.placeholder.com/150x200.png?text=No+API+Key](https://via.placeholder.com/150x200.png?text=No+API+Key)",
+            "thumbnail": "https://via.placeholder.com/150x200.png?text=No+API+Key",
             "total_pages": 300
         }]
     
-    url = f"[https://dapi.kakao.com/v3/search/book?query=](https://dapi.kakao.com/v3/search/book?query=){query}"
+    clean_query = query.strip()
+    encoded_query = urllib.parse.quote(clean_query)
+    url = f"https://dapi.kakao.com/v3/search/book?query={encoded_query}"
     headers = {"Authorization": f"KakaoAK {KAKAO_API_KEY}"}
     
     try:
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers, timeout=5)
         if response.status_code == 200:
             results = response.json().get("documents", [])
             books = []
@@ -432,7 +435,7 @@ def search_book_kakao(query):
                 books.append({
                     "title": item.get("title", "제목 없음"),
                     "authors": item.get("authors", ["저자 미상"]),
-                    "thumbnail": item.get("thumbnail", "[https://via.placeholder.com/150x200.png?text=No+Cover](https://via.placeholder.com/150x200.png?text=No+Cover)"),
+                    "thumbnail": item.get("thumbnail", "https://via.placeholder.com/150x200.png?text=No+Cover"),
                     "total_pages": 300
                 })
             return books
