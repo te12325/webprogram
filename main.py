@@ -257,7 +257,7 @@ def load_books_for_user(username):
                 "current_page": int(row["current_page"]),
                 "target_date": row["target_date"],
                 "status": row["status"],
-                "rating": float(row["rating"]),
+                "rating": float(row["rating"]) if pd.notna(row["rating"]) else 5.0,
                 "notes": str(row["notes"]) if pd.notna(row["notes"]) else "",
                 "completed_date": row["completed_date"] if pd.notna(row["completed_date"]) else None
             })
@@ -502,7 +502,6 @@ with st.sidebar:
                 completed_date_input = datetime.date.today()
                 initial_rating = 5.0
                 
-                # '읽기 완료' 선택 시 즉시 완독 날짜와 별점 선택창 제공
                 if status == "읽기 완료":
                     completed_date_input = st.date_input("완독한 날짜 선택", datetime.date.today())
                     rating_options = [i / 2 for i in range(1, 11)] # 0.5 ~ 5.0
@@ -580,18 +579,25 @@ def show_book_details(book):
 
     elif book["status"] == "읽기 완료":
         st.success(f"🎉 완독한 책입니다! (완독일: {book.get('completed_date', '미기재')})")
-        current_rating = book.get("rating", 5.0) or 5.0
+        
+        current_rating = float(book.get("rating", 5.0))
+        if current_rating not in RATING_OPTIONS:
+            current_rating = 5.0
+            
         st.write(f"**내 평점:** {render_star_rating(current_rating)}")
         
+        # 평점 수정 슬라이더 (고정값 대신 book['rating']을 기본값으로 정확히 연동)
         new_rating = st.select_slider(
             "평점 수정 (0.5 단위)",
             options=RATING_OPTIONS,
             value=current_rating,
             key=f"modal_rating_{book['id']}"
         )
-        if new_rating != book.get("rating"):
+        
+        if st.button("평점 저장하기 ⭐", key=f"modal_save_rating_{book['id']}"):
             book["rating"] = new_rating
             save_books_for_user(st.session_state.user_name, st.session_state.my_books)
+            st.success("평점이 성공적으로 수정되었습니다! ✨")
             st.rerun()
 
     elif book["status"] == "위시리스트":
