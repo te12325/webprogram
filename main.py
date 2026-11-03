@@ -586,7 +586,6 @@ def show_book_details(book):
             
         st.write(f"**내 평점:** {render_star_rating(current_rating)}")
         
-        # 평점 수정 슬라이더 (고정값 대신 book['rating']을 기본값으로 정확히 연동)
         new_rating = st.select_slider(
             "평점 수정 (0.5 단위)",
             options=RATING_OPTIONS,
