@@ -355,7 +355,6 @@ if not st.session_state.user_name:
                             st.session_state.user_name = login_id
                             st.session_state.my_books = load_books_for_user(login_id)
                             
-                            # 저장된 프로필 이미지 불러오기
                             p_img_str = match.iloc[0].get("profile_img", "")
                             if pd.notna(p_img_str) and str(p_img_str).strip() != "":
                                 try:
@@ -501,13 +500,13 @@ with st.sidebar:
                 status = st.selectbox("독서 상태", ["읽는 중", "읽기 완료", "위시리스트"])
                 
                 completed_date_input = datetime.date.today()
+                initial_rating = 5.0
+                
+                # 읽기 완료 상태일 때만 완독 날짜 및 별점 선택 가능하도록 설정
                 if status == "읽기 완료":
                     completed_date_input = st.date_input("완독한 날짜 선택", datetime.date.today())
-                
-                initial_rating = 5.0
-                if status == "읽기 완료":
-                    rating_options = [i / 2 for i in range(1, 11)]
-                    initial_rating = st.select_slider("별점 평점 선택", options=rating_options, value=5.0)
+                    rating_options = [i / 2 for i in range(1, 11)] # 0.5 ~ 5.0
+                    initial_rating = st.select_slider("별점 평점 선택 (1~5점)", options=rating_options, value=5.0)
 
                 submit_button = st.form_submit_button("내 아지트에 추가 ✨")
                 
@@ -521,6 +520,8 @@ with st.sidebar:
                         st.warning(f"⚠️ 이미 [{status}]에 추가된 책입니다!")
                     else:
                         comp_date_str = completed_date_input.strftime("%Y-%m-%d") if status == "읽기 완료" else None
+                        book_rating = initial_rating if status == "읽기 완료" else 0.0
+                        
                         new_book = {
                             "id": len(st.session_state.my_books) + 1,
                             "title": selected_book["title"],
@@ -530,7 +531,7 @@ with st.sidebar:
                             "current_page": total_pages if status == "읽기 완료" else 0,
                             "target_date": str(target_date),
                             "status": status,
-                            "rating": initial_rating if status == "읽기 완료" else 0.0,
+                            "rating": book_rating,
                             "notes": "",
                             "completed_date": comp_date_str
                         }
@@ -705,7 +706,7 @@ with page_tab2:
                         if st.button("📝 기록", key=f"btn_w_{book['id']}", use_container_width=True):
                             show_book_details(book)
 
-    # 3) 완독 기록 다이어리 캘린더 복원
+    # 3) 완독 기록 다이어리 캘린더
     with shelf_tab3:
         st.subheader("📅 완독 기록 다이어리 ✨")
         
