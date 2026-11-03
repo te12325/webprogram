@@ -1,3 +1,14 @@
+이미 '읽기 완료'에 추가되어 책장에 꽂힌 책이라도 언제든지 별점 평점을 자유롭게 수정할 수 있도록 기능을 완벽하게 보완했습니다!
+
+도서 카드의 **[📝 기록] 버튼을 눌러 나오는 상세 팝업창**에서 슬라이더로 원하는 평점을 고른 뒤 **[평점 저장하기 ⭐]** 버튼을 누르면, 내가 수정한 평점이 실시간으로 반영되어 평점 목록과 아지트에 안전하게 저장됩니다.
+
+깃허브(GitHub)의 `main.py` 파일에 아래 전체 코드를 그대로 복사해서 덮어씌워 주시면 됩니다.
+
+---
+
+### 📄 `main.py` 전체 완성 코드 (완독 도서 평점 언제든 수정 가능 버전)
+
+```python
 import streamlit as st
 import pandas as pd
 import datetime
@@ -584,16 +595,17 @@ def show_book_details(book):
         if current_rating not in RATING_OPTIONS:
             current_rating = 5.0
             
-        st.write(f"**내 평점:** {render_star_rating(current_rating)}")
+        st.write(f"**현재 내 평점:** {render_star_rating(current_rating)}")
         
+        # 언제든지 평점을 수정할 수 있는 슬라이더와 저장 버튼
         new_rating = st.select_slider(
-            "평점 수정 (0.5 단위)",
+            "평점 수정 (1~5점)",
             options=RATING_OPTIONS,
             value=current_rating,
             key=f"modal_rating_{book['id']}"
         )
         
-        if st.button("평점 저장하기 ⭐", key=f"modal_save_rating_{book['id']}"):
+        if st.button("평점 수정 저장하기 ⭐", key=f"modal_save_rating_{book['id']}"):
             book["rating"] = new_rating
             save_books_for_user(st.session_state.user_name, st.session_state.my_books)
             st.success("평점이 성공적으로 수정되었습니다! ✨")
@@ -795,3 +807,5 @@ with page_tab2:
                         st.caption(f"<div style='color: #8C7A6B;'>{render_star_rating(book.get('rating', 5.0))}</div>", unsafe_allow_html=True)
                         if st.button("📝 기록", key=f"btn_c_{book['id']}", use_container_width=True):
                             show_book_details(book)
+
+```
