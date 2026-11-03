@@ -502,7 +502,7 @@ with st.sidebar:
                 completed_date_input = datetime.date.today()
                 initial_rating = 5.0
                 
-                # 읽기 완료 상태일 때만 완독 날짜 및 별점 선택 가능하도록 설정
+                # '읽기 완료' 선택 시 즉시 완독 날짜와 별점 선택창 제공
                 if status == "읽기 완료":
                     completed_date_input = st.date_input("완독한 날짜 선택", datetime.date.today())
                     rating_options = [i / 2 for i in range(1, 11)] # 0.5 ~ 5.0
