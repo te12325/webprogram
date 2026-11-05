@@ -155,6 +155,10 @@ if "cal_year" not in st.session_state:
 if "cal_month" not in st.session_state:
     st.session_state.cal_month = datetime.date.today().month
 
+# 검색창 초기화용 세션 키 설정
+if "clear_search" not in st.session_state:
+    st.session_state.clear_search = False
+
 try:
     KAKAO_API_KEY = str(st.secrets["KAKAO_API_KEY"]).strip()
 except (KeyError, FileNotFoundError):
@@ -487,7 +491,11 @@ with st.sidebar:
 
     st.header("📖 책 등록하기")
     
-    # 책 검색어 입력창을 text_input으로 구성하고, 등록 후 깔끔하게 초기화되도록 key 부여
+    # 초기화 요청이 들어왔다면 검색어 입력 상태 초기화
+    if st.session_state.clear_search:
+        st.session_state.book_search_input = ""
+        st.session_state.clear_search = False
+
     search_term = st.text_input("책 제목을 검색하세요", key="book_search_input")
 
     if search_term:
@@ -533,15 +541,15 @@ with st.sidebar:
                             "current_page": total_pages if status == "읽기 완료" else 0,
                             "target_date": str(target_date),
                             "status": status,
-                            "rating": 0.0,  # 초기 평점 없음 (기록 팝업에서 수정하기 전까지 미평가)
+                            "rating": 0.0,
                             "notes": "",
                             "completed_date": comp_date_str
                         }
                         st.session_state.my_books.append(new_book)
                         save_books_for_user(st.session_state.user_name, st.session_state.my_books)
                         
-                        # 등록 완료 후 검색창 키를 비워주어 화면을 깔끔하게 초기화하고 재실행
-                        st.session_state.book_search_input = ""
+                        # 검색창 초기화 플래그를 True로 설정하고 재실행하여 깔끔하게 초기 화면으로 복귀
+                        st.session_state.clear_search = True
                         st.success(f"🌱 '{selected_book['title']}' 책이 아지트에 추가되었습니다!")
                         st.rerun()
         else:
@@ -589,7 +597,7 @@ def show_book_details(book):
         
         current_rating = float(book.get("rating", 0.0))
         if current_rating <= 0.0:
-            current_rating = 5.0  # 기본 선택값
+            current_rating = 5.0
             st.info("💡 아직 평점이 등록되지 않았습니다. 아래에서 평점을 남겨보세요!")
         else:
             st.write(f"**현재 내 평점:** {render_star_rating(current_rating)}")
@@ -784,7 +792,6 @@ with page_tab2:
 
     with shelf_tab4:
         st.subheader("⭐ 완독 도서 평점 모아보기")
-        # '읽기 완료' 상태인 모든 책들을 평점 탭에 표시 (평점이 없으면 미평가로 표시됨)
         completed_books = [b for b in st.session_state.my_books if b["status"] == "읽기 완료"]
         if not completed_books:
             st.info("✨ 아직 완독한 책이 없습니다.")
