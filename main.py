@@ -446,7 +446,7 @@ def search_book_kakao(query):
 
 def render_star_rating(rating):
     if rating <= 0.0:
-        return ""
+        return "미평가 (평점 남기기 가능)"
     full_stars = int(rating)
     has_half = (rating - full_stars) >= 0.5
     empty_stars = 5 - full_stars - (1 if has_half else 0)
@@ -486,7 +486,9 @@ with st.sidebar:
     st.divider()
 
     st.header("📖 책 등록하기")
-    search_term = st.text_input("책 제목을 검색하세요")
+    
+    # 책 검색어 입력창을 text_input으로 구성하고, 등록 후 깔끔하게 초기화되도록 key 부여
+    search_term = st.text_input("책 제목을 검색하세요", key="book_search_input")
 
     if search_term:
         search_results = search_book_kakao(search_term)
@@ -531,13 +533,17 @@ with st.sidebar:
                             "current_page": total_pages if status == "읽기 완료" else 0,
                             "target_date": str(target_date),
                             "status": status,
-                            "rating": 0.0,  # 초기 평점 없음 (기록 팝업에서 수정하기 전까지 미표시)
+                            "rating": 0.0,  # 초기 평점 없음 (기록 팝업에서 수정하기 전까지 미평가)
                             "notes": "",
                             "completed_date": comp_date_str
                         }
                         st.session_state.my_books.append(new_book)
                         save_books_for_user(st.session_state.user_name, st.session_state.my_books)
+                        
+                        # 등록 완료 후 검색창 키를 비워주어 화면을 깔끔하게 초기화하고 재실행
+                        st.session_state.book_search_input = ""
                         st.success(f"🌱 '{selected_book['title']}' 책이 아지트에 추가되었습니다!")
+                        st.rerun()
         else:
             st.warning("검색 결과가 없습니다.")
 
@@ -778,10 +784,10 @@ with page_tab2:
 
     with shelf_tab4:
         st.subheader("⭐ 완독 도서 평점 모아보기")
-        # 평점이 0보다 큰(기록에서 저장한 적이 있는) 완독 도서만 평점 목록에 표시
-        completed_books = [b for b in st.session_state.my_books if b["status"] == "읽기 완료" and float(b.get("rating", 0.0)) > 0.0]
+        # '읽기 완료' 상태인 모든 책들을 평점 탭에 표시 (평점이 없으면 미평가로 표시됨)
+        completed_books = [b for b in st.session_state.my_books if b["status"] == "읽기 완료"]
         if not completed_books:
-            st.info("✨ 아직 평점을 남긴 완독 도서가 없습니다. 책장의 [📝 기록] 버튼을 눌러 평점을 남겨보세요!")
+            st.info("✨ 아직 완독한 책이 없습니다.")
         else:
             completed_books.sort(key=lambda x: x.get("rating", 0), reverse=True)
             cols = st.columns(4)
