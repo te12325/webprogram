@@ -249,15 +249,15 @@ def load_books_for_user(username):
         user_df = df[df["username"] == username]
         books = []
         for _, row in user_df.iterrows():
-            r_val = float(row["rating"]) if pd.notna(row["rating"]) else 0.0
+            r_val = int(row["rating"]) if pd.notna(row["rating"]) else 0
             books.append({
                 "id": int(row["id"]),
                 "title": row["title"],
                 "author": row["author"],
                 "cover_url": row["cover_url"],
-                "total_pages": int(row["total_pages"]),
-                "current_page": int(row["current_page"]),
-                "target_date": row["target_date"],
+                "total_pages": int(row["total_pages"]) if "total_pages" in row and pd.notna(row["total_pages"]) else 300,
+                "current_page": int(row["current_page"]) if "current_page" in row and pd.notna(row["current_page"]) else 0,
+                "target_date": row["target_date"] if "target_date" in row else str(datetime.date.today()),
                 "status": row["status"],
                 "rating": r_val,
                 "notes": str(row["notes"]) if pd.notna(row["notes"]) else "",
@@ -411,15 +411,14 @@ if not st.session_state.user_name:
 
 
 # -----------------------------------------------------------------------------
-# 5. 유틸리티 함수 정의 (도서 검색 및 별점)
+# 5. 유틸리티 함수 정의 (도서 검색 및 정수 별점 렌더링)
 # -----------------------------------------------------------------------------
 def search_book_kakao(query):
     if not KAKAO_API_KEY:
         return [{
             "title": f"[API키 미설정] {query}",
             "authors": ["설정 확인 필요"],
-            "thumbnail": "https://via.placeholder.com/150x200.png?text=No+API+Key",
-            "total_pages": 300
+            "thumbnail": "https://via.placeholder.com/150x200.png?text=No+API+Key"
         }]
     
     clean_query = query.strip()
@@ -436,8 +435,7 @@ def search_book_kakao(query):
                 books.append({
                     "title": item.get("title", "제목 없음"),
                     "authors": item.get("authors", ["저자 미상"]),
-                    "thumbnail": item.get("thumbnail", "https://via.placeholder.com/150x200.png?text=No+Cover"),
-                    "total_pages": 300
+                    "thumbnail": item.get("thumbnail", "https://via.placeholder.com/150x200.png?text=No+Cover")
                 })
             return books
     except Exception as e:
@@ -445,20 +443,18 @@ def search_book_kakao(query):
     return []
 
 def render_star_rating(rating):
-    if rating <= 0.0:
+    if rating <= 0:
         return "미평가 (평점 남기기 가능)"
     
     full_stars = int(rating)
-    has_half = (rating - full_stars) >= 0.5
-    empty_stars = 5 - full_stars - (1 if has_half else 0)
+    empty_stars = 5 - full_stars
     
-    # 소수점(.5)일 때는 ✨ 대신 반쪽 별 느낌을 주는 ⯪ 또는 ⭐️(반쪽 별 표현) 조합 사용
-    stars_str = "★" * full_stars + ("⭐" if has_half else "") + "☆" * empty_stars
-    return f"{stars_str} ({rating}/5.0)"
+    stars_str = "★" * full_stars + "☆" * empty_stars
+    return f"{stars_str} ({rating}점)"
 
 
 # -----------------------------------------------------------------------------
-# 6. 사이드바 영역 (프로필 설정 및 책 등록)
+# 6. 사이드바 영역 (프로필 설정 및 책 등록 - 페이지 수, 목표일 제거)
 # -----------------------------------------------------------------------------
 with st.sidebar:
     with st.container(border=True):
@@ -489,7 +485,6 @@ with st.sidebar:
 
     st.header("📖 책 등록하기")
     
-    # 검색창 초기화 제어 상태 설정
     if "clear_search" not in st.session_state:
         st.session_state.clear_search = False
 
@@ -512,8 +507,6 @@ with st.sidebar:
             with st.form("add_book_form"):
                 st.write(f"**선택한 책:** {selected_book['title']}")
                 
-                total_pages = st.number_input("전체 페이지 수", min_value=1, value=300, step=10)
-                target_date = st.date_input("목표 완료일", datetime.date.today() + datetime.timedelta(days=14))
                 status = st.selectbox("독서 상태", ["읽는 중", "읽기 완료", "위시리스트"])
                 
                 completed_date_input = datetime.date.today()
@@ -538,11 +531,11 @@ with st.sidebar:
                             "title": selected_book["title"],
                             "author": ", ".join(selected_book["authors"]),
                             "cover_url": selected_book["thumbnail"],
-                            "total_pages": total_pages,
-                            "current_page": total_pages if status == "읽기 완료" else 0,
-                            "target_date": str(target_date),
+                            "total_pages": 300,
+                            "current_page": 300 if status == "읽기 완료" else 0,
+                            "target_date": str(datetime.date.today()),
                             "status": status,
-                            "rating": 0.0,
+                            "rating": 0,
                             "notes": "",
                             "completed_date": comp_date_str
                         }
@@ -557,60 +550,49 @@ with st.sidebar:
 
 
 # -----------------------------------------------------------------------------
-# 7. 도서 상세정보 및 삭제 팝업 모달
+# 7. 도서 상세정보 및 삭제 팝업 모달 (정수 평점 1~5점 적용)
 # -----------------------------------------------------------------------------
 @st.dialog("☕ 도서 상세 및 기록 관리")
 def show_book_details(book):
     st.image(book["cover_url"], width=150)
     st.subheader(book["title"])
-    st.caption(f"저자: {book['author']} | 전체 {book['total_pages']}p")
+    st.caption(f"저자: {book['author']}")
     st.divider()
 
-    RATING_OPTIONS = [i / 2 for i in range(1, 11)]
+    RATING_OPTIONS = [1, 2, 3, 4, 5]
 
     if book["status"] == "읽는 중":
-        progress = min(book["current_page"] / book["total_pages"], 1.0)
-        st.progress(progress, text=f"진행률: {int(progress * 100)}%")
-        
-        new_page = st.number_input(
-            "현재 읽은 페이지 입력", 
-            min_value=0, 
-            max_value=book["total_pages"], 
-            value=book["current_page"],
-            key=f"modal_page_{book['id']}"
-        )
-        
         completion_date = st.date_input("완독한 날짜", datetime.date.today(), key=f"modal_comp_date_{book['id']}")
 
-        if st.button("페이지 저장 📝", key=f"modal_save_page_{book['id']}"):
-            book["current_page"] = new_page
-            if new_page >= book["total_pages"]:
-                book["status"] = "읽기 완료"
-                book["completed_date"] = completion_date.strftime("%Y-%m-%d")
-                st.balloons()
-                st.success("🎉 축하합니다! 완독하셨습니다!")
+        if st.button("완독 완료로 변경하기 🎉", key=f"modal_complete_{book['id']}"):
+            book["status"] = "읽기 완료"
+            book["current_page"] = book["total_pages"]
+            book["completed_date"] = completion_date.strftime("%Y-%m-%d")
+            st.balloons()
             save_books_for_user(st.session_state.user_name, st.session_state.my_books)
             st.rerun()
 
     elif book["status"] == "읽기 완료":
         st.success(f"🎉 완독한 책입니다! (완독일: {book.get('completed_date', '미기재')})")
         
-        current_rating = float(book.get("rating", 0.0))
-        if current_rating <= 0.0:
-            current_rating = 5.0
+        current_rating = int(book.get("rating", 0))
+        if current_rating not in RATING_OPTIONS:
+            current_rating = 5
+            
+        if current_rating <= 0:
             st.info("💡 아직 평점이 등록되지 않았습니다. 아래에서 평점을 남겨보세요!")
         else:
             st.write(f"**현재 내 평점:** {render_star_rating(current_rating)}")
         
-        new_rating = st.select_slider(
+        new_rating = st.selectbox(
             "평점 선택 및 수정 (1~5점)",
             options=RATING_OPTIONS,
-            value=current_rating,
+            index=current_rating - 1 if 1 <= current_rating <= 5 else 4,
             key=f"modal_rating_{book['id']}"
         )
         
         if st.button("평점 저장하기 ⭐", key=f"modal_save_rating_{book['id']}"):
-            book["rating"] = new_rating
+            book["rating"] = int(new_rating)
             save_books_for_user(st.session_state.user_name, st.session_state.my_books)
             st.success("평점이 성공적으로 저장되었습니다! ✨")
             st.rerun()
@@ -803,6 +785,6 @@ with page_tab2:
                     with st.container(border=True):
                         st.image(book["cover_url"], width=100)
                         st.markdown(f"<div style='font-size: 0.85rem; font-weight: 700; margin-top: 6px; color: #5C4B43;'>{book['title']}</div>", unsafe_allow_html=True)
-                        st.caption(f"<div style='color: #8C7A6B;'>{render_star_rating(book.get('rating', 0.0))}</div>", unsafe_allow_html=True)
+                        st.caption(f"<div style='color: #8C7A6B;'>{render_star_rating(book.get('rating', 0))}</div>", unsafe_allow_html=True)
                         if st.button("📝 기록", key=f"btn_c_{book['id']}", use_container_width=True):
                             show_book_details(book)
