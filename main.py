@@ -454,7 +454,7 @@ def render_star_rating(rating):
 
 
 # -----------------------------------------------------------------------------
-# 6. 사이드바 영역 (프로필 설정 및 책 등록 - 페이지 수, 목표일 제거)
+# 6. 사이드바 영역 (프로필 설정 및 책 등록)
 # -----------------------------------------------------------------------------
 with st.sidebar:
     with st.container(border=True):
@@ -550,7 +550,7 @@ with st.sidebar:
 
 
 # -----------------------------------------------------------------------------
-# 7. 도서 상세정보 및 삭제 팝업 모달 (정수 평점 1~5점 적용)
+# 7. 도서 상세정보 및 삭제 팝업 모달
 # -----------------------------------------------------------------------------
 @st.dialog("☕ 도서 상세 및 기록 관리")
 def show_book_details(book):
@@ -674,7 +674,8 @@ with page_tab1:
                     st.markdown(f"<div style='font-size: 0.8rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 6px; color: #5C4B43;'>{book['title']}</div>", unsafe_allow_html=True)
 
 with page_tab2:
-    shelf_tab1, shelf_tab2, shelf_tab3, shelf_tab4 = st.tabs(["📖 읽는 중", "📌 위시리스트", "📅 캘린더", "⭐ 평점"])
+    # 탭 이름을 '⭐ 평점'에서 '완독 도서'로 변경
+    shelf_tab1, shelf_tab2, shelf_tab3, shelf_tab4 = st.tabs(["📖 읽는 중", "📌 위시리스트", "📅 캘린더", "📚 완독 도서"])
     
     with shelf_tab1:
         reading_books = [b for b in st.session_state.my_books if b["status"] == "읽는 중"]
@@ -773,7 +774,7 @@ with page_tab2:
                                 """, unsafe_allow_html=True)
 
     with shelf_tab4:
-        st.subheader("⭐ 완독 도서 평점 모아보기")
+        # 상단 타이틀 문구 완전 삭제 완료
         completed_books = [b for b in st.session_state.my_books if b["status"] == "읽기 완료"]
         if not completed_books:
             st.info("✨ 아직 완독한 책이 없습니다.")
