@@ -411,7 +411,7 @@ if not st.session_state.user_name:
 
 
 # -----------------------------------------------------------------------------
-# 5. 유틸리티 함수 정의 (도서 검색 및 정수 별점 렌더링)
+# 5. 유틸리티 함수 정의 (도서 검색 및 오직 별 모양만 렌더링)
 # -----------------------------------------------------------------------------
 def search_book_kakao(query):
     if not KAKAO_API_KEY:
@@ -449,8 +449,8 @@ def render_star_rating(rating):
     full_stars = int(rating)
     empty_stars = 5 - full_stars
     
-    stars_str = "★" * full_stars + "☆" * empty_stars
-    return f"{stars_str} ({rating}점)"
+    # 숫자(점) 및 한글 글자 없이 오직 별 기호만 반환
+    return "★" * full_stars + "☆" * empty_stars
 
 
 # -----------------------------------------------------------------------------
