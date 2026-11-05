@@ -503,12 +503,8 @@ with st.sidebar:
                 status = st.selectbox("독서 상태", ["읽는 중", "읽기 완료", "위시리스트"])
                 
                 completed_date_input = datetime.date.today()
-                initial_rating = 5.0
-                
                 if status == "읽기 완료":
                     completed_date_input = st.date_input("완독한 날짜 선택", datetime.date.today())
-                    rating_options = [i / 2 for i in range(1, 11)] # 0.5 ~ 5.0
-                    initial_rating = st.select_slider("별점 평점 선택 (1~5점)", options=rating_options, value=5.0)
 
                 submit_button = st.form_submit_button("내 아지트에 추가 ✨")
                 
@@ -522,7 +518,6 @@ with st.sidebar:
                         st.warning(f"⚠️ 이미 [{status}]에 추가된 책입니다!")
                     else:
                         comp_date_str = completed_date_input.strftime("%Y-%m-%d") if status == "읽기 완료" else None
-                        book_rating = initial_rating if status == "읽기 완료" else 0.0
                         
                         new_book = {
                             "id": len(st.session_state.my_books) + 1,
@@ -533,7 +528,7 @@ with st.sidebar:
                             "current_page": total_pages if status == "읽기 완료" else 0,
                             "target_date": str(target_date),
                             "status": status,
-                            "rating": book_rating,
+                            "rating": 5.0 if status == "읽기 완료" else 0.0,
                             "notes": "",
                             "completed_date": comp_date_str
                         }
@@ -575,6 +570,8 @@ def show_book_details(book):
             if new_page >= book["total_pages"]:
                 book["status"] = "읽기 완료"
                 book["completed_date"] = completion_date.strftime("%Y-%m-%d")
+                if book.get("rating", 0.0) == 0.0:
+                    book["rating"] = 5.0
                 st.balloons()
                 st.success("🎉 축하합니다! 완독하셨습니다!")
             save_books_for_user(st.session_state.user_name, st.session_state.my_books)
