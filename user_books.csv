@@ -1,8 +1,4 @@
 username,id,title,author,cover_url,total_pages,current_page,target_date,status,rating,notes,completed_date
-태은,1,워터 문,서맨사 소토 얌바오,https://search1.kakaocdn.net/thumb/R120x174.q85/?fname=http%3A%2F%2Ft1.daumcdn.net%2Flbook%2Fimage%2F7006672%3Ftimestamp%3D20251024144313,300,0,2026-11-12,읽는 중,0.0,,
-태은,2,앨리스 죽이기,고바야시 야스미,https://search1.kakaocdn.net/thumb/R120x174.q85/?fname=http%3A%2F%2Ft1.daumcdn.net%2Flbook%2Fimage%2F645697%3Ftimestamp%3D20260531080621,300,300,2026-11-12,읽기 완료,5.0,,2026-10-29
-태은,3,율의 시선,김민서,https://search1.kakaocdn.net/thumb/R120x174.q85/?fname=http%3A%2F%2Ft1.daumcdn.net%2Flbook%2Fimage%2F6736203%3Ftimestamp%3D20260822122629,300,300,2026-11-13,읽기 완료,5.0,,2026-10-30
-태은,4,약한영웅 Class 1 대본집 세트,"유수민, 한준희",https://search1.kakaocdn.net/thumb/R120x174.q85/?fname=http%3A%2F%2Ft1.daumcdn.net%2Flbook%2Fimage%2F6893272%3Ftimestamp%3D20260514122418,300,300,2026-11-13,읽기 완료,5.0,,2026-10-30
 te12325,1,시한부,백은별,https://search1.kakaocdn.net/thumb/R120x174.q85/?fname=http%3A%2F%2Ft1.daumcdn.net%2Flbook%2Fimage%2F6541255%3Ftimestamp%3D20260104123512,300,300,2026-11-19,읽기 완료,1.0,내용이 너무 잔인? 자살? 관련이여서 별로였다. ,2026-11-05
 te12325,2,세상의 마지막 기차역(리커버 에디션),무라세 다케시,https://search1.kakaocdn.net/thumb/R120x174.q85/?fname=http%3A%2F%2Ft1.daumcdn.net%2Flbook%2Fimage%2F6068517%3Ftimestamp%3D20260110150046,300,300,2026-11-19,읽기 완료,5.0,,2026-11-05
 te12325,3,아몬드,손원평,https://search1.kakaocdn.net/thumb/R120x174.q85/?fname=http%3A%2F%2Ft1.daumcdn.net%2Flbook%2Fimage%2F533580%3Ftimestamp%3D20240518114732,300,300,2026-11-19,읽기 완료,3.0,,2026-11-05
@@ -12,3 +8,13 @@ te12325,6,나의 돈키호테,김호연,https://search1.kakaocdn.net/thumb/R120x
 te12325,7,연남동 빙굴빙굴 빨래방,김지윤,https://search1.kakaocdn.net/thumb/R120x174.q85/?fname=http%3A%2F%2Ft1.daumcdn.net%2Flbook%2Fimage%2F6414255%3Ftimestamp%3D20260611123240,300,300,2026-11-19,읽기 완료,0.0,,2026-11-05
 te12325,8,세계를 건너 너에게 갈게,이꽃님,https://search1.kakaocdn.net/thumb/R120x174.q85/?fname=http%3A%2F%2Ft1.daumcdn.net%2Flbook%2Fimage%2F5517612%3Ftimestamp%3D20250716135247,300,300,2026-11-19,읽기 완료,0.0,,2026-11-05
 te12325,9,천 개의 파랑,천선란,https://search1.kakaocdn.net/thumb/R120x174.q85/?fname=http%3A%2F%2Ft1.daumcdn.net%2Flbook%2Fimage%2F5446629%3Ftimestamp%3D20260429141735,300,300,2026-11-19,읽기 완료,0.0,,2026-11-05
+태은,1,시한부,백은별,https://search1.kakaocdn.net/thumb/R120x174.q85/?fname=http%3A%2F%2Ft1.daumcdn.net%2Flbook%2Fimage%2F6541255%3Ftimestamp%3D20260104123512,300,300,2026-11-19,읽기 완료,1.0,내용이 너무 잔인? 자살? 관련이여서 별로였다. ,2026-11-05
+태은,2,세상의 마지막 기차역(리커버 에디션),무라세 다케시,https://search1.kakaocdn.net/thumb/R120x174.q85/?fname=http%3A%2F%2Ft1.daumcdn.net%2Flbook%2Fimage%2F6068517%3Ftimestamp%3D20260110150046,300,300,2026-11-19,읽기 완료,5.0,,2026-11-05
+태은,3,아몬드,손원평,https://search1.kakaocdn.net/thumb/R120x174.q85/?fname=http%3A%2F%2Ft1.daumcdn.net%2Flbook%2Fimage%2F533580%3Ftimestamp%3D20240518114732,300,300,2026-11-19,읽기 완료,3.0,,2026-11-05
+태은,4,귤의 맛,조남주,https://search1.kakaocdn.net/thumb/R120x174.q85/?fname=http%3A%2F%2Ft1.daumcdn.net%2Flbook%2Fimage%2F5447519%3Ftimestamp%3D20261004115858,300,300,2026-11-19,읽기 완료,0.0,,2026-11-05
+태은,5,율의 시선,김민서,https://search1.kakaocdn.net/thumb/R120x174.q85/?fname=http%3A%2F%2Ft1.daumcdn.net%2Flbook%2Fimage%2F6736203%3Ftimestamp%3D20260822122629,300,300,2026-11-19,읽기 완료,0.0,,2026-11-05
+태은,6,나의 돈키호테,김호연,https://search1.kakaocdn.net/thumb/R120x174.q85/?fname=http%3A%2F%2Ft1.daumcdn.net%2Flbook%2Fimage%2F6609944%3Ftimestamp%3D20261023121028,300,300,2026-11-19,읽기 완료,0.0,,2026-11-05
+태은,7,연남동 빙굴빙굴 빨래방,김지윤,https://search1.kakaocdn.net/thumb/R120x174.q85/?fname=http%3A%2F%2Ft1.daumcdn.net%2Flbook%2Fimage%2F6414255%3Ftimestamp%3D20260611123240,300,300,2026-11-19,읽기 완료,0.0,,2026-11-05
+태은,8,세계를 건너 너에게 갈게,이꽃님,https://search1.kakaocdn.net/thumb/R120x174.q85/?fname=http%3A%2F%2Ft1.daumcdn.net%2Flbook%2Fimage%2F5517612%3Ftimestamp%3D20250716135247,300,300,2026-11-19,읽기 완료,0.0,,2026-11-05
+태은,9,천 개의 파랑,천선란,https://search1.kakaocdn.net/thumb/R120x174.q85/?fname=http%3A%2F%2Ft1.daumcdn.net%2Flbook%2Fimage%2F5446629%3Ftimestamp%3D20260429141735,300,300,2026-11-19,읽기 완료,0.0,,2026-11-05
+태은,10,"어느 날, 내 죽음에 네가 들어왔다",세이카 료겐,https://search1.kakaocdn.net/thumb/R120x174.q85/?fname=http%3A%2F%2Ft1.daumcdn.net%2Flbook%2Fimage%2F6064489%3Ftimestamp%3D20251112151425,300,0,2026-11-05,읽는 중,0.0,,
