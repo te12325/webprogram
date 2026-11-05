@@ -444,7 +444,7 @@ def search_book_kakao(query):
 
 def render_star_rating(rating):
     if rating <= 0:
-        return "미평가 (평점 남기기 가능)"
+        return ""
     
     full_stars = int(rating)
     empty_stars = 5 - full_stars
@@ -576,12 +576,7 @@ def show_book_details(book):
         st.success(f"🎉 완독한 책입니다! (완독일: {book.get('completed_date', '미기재')})")
         
         current_rating = int(book.get("rating", 0))
-        if current_rating not in RATING_OPTIONS:
-            current_rating = 5
-            
-        if current_rating <= 0:
-            st.info("💡 아직 평점이 등록되지 않았습니다. 아래에서 평점을 남겨보세요!")
-        else:
+        if current_rating > 0:
             st.write(f"**현재 내 평점:** {render_star_rating(current_rating)}")
         
         new_rating = st.selectbox(
@@ -674,7 +669,6 @@ with page_tab1:
                     st.markdown(f"<div style='font-size: 0.8rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 6px; color: #5C4B43;'>{book['title']}</div>", unsafe_allow_html=True)
 
 with page_tab2:
-    # 탭 이름을 '⭐ 평점'에서 '완독 도서'로 변경
     shelf_tab1, shelf_tab2, shelf_tab3, shelf_tab4 = st.tabs(["📖 읽는 중", "📌 위시리스트", "📅 캘린더", "📚 완독 도서"])
     
     with shelf_tab1:
@@ -774,7 +768,6 @@ with page_tab2:
                                 """, unsafe_allow_html=True)
 
     with shelf_tab4:
-        # 상단 타이틀 문구 완전 삭제 완료
         completed_books = [b for b in st.session_state.my_books if b["status"] == "읽기 완료"]
         if not completed_books:
             st.info("✨ 아직 완독한 책이 없습니다.")
