@@ -155,10 +155,6 @@ if "cal_year" not in st.session_state:
 if "cal_month" not in st.session_state:
     st.session_state.cal_month = datetime.date.today().month
 
-# 검색창 초기화용 세션 키 설정
-if "clear_search" not in st.session_state:
-    st.session_state.clear_search = False
-
 try:
     KAKAO_API_KEY = str(st.secrets["KAKAO_API_KEY"]).strip()
 except (KeyError, FileNotFoundError):
@@ -451,11 +447,13 @@ def search_book_kakao(query):
 def render_star_rating(rating):
     if rating <= 0.0:
         return "미평가 (평점 남기기 가능)"
+    
     full_stars = int(rating)
     has_half = (rating - full_stars) >= 0.5
     empty_stars = 5 - full_stars - (1 if has_half else 0)
     
-    stars_str = "★" * full_stars + ("✨" if has_half else "") + "☆" * empty_stars
+    # 소수점(.5)일 때는 ✨ 대신 반쪽 별 느낌을 주는 ⯪ 또는 ⭐️(반쪽 별 표현) 조합 사용
+    stars_str = "★" * full_stars + ("⭐" if has_half else "") + "☆" * empty_stars
     return f"{stars_str} ({rating}/5.0)"
 
 
@@ -491,7 +489,10 @@ with st.sidebar:
 
     st.header("📖 책 등록하기")
     
-    # 초기화 요청이 들어왔다면 검색어 입력 상태 초기화
+    # 검색창 초기화 제어 상태 설정
+    if "clear_search" not in st.session_state:
+        st.session_state.clear_search = False
+
     if st.session_state.clear_search:
         st.session_state.book_search_input = ""
         st.session_state.clear_search = False
@@ -548,7 +549,6 @@ with st.sidebar:
                         st.session_state.my_books.append(new_book)
                         save_books_for_user(st.session_state.user_name, st.session_state.my_books)
                         
-                        # 검색창 초기화 플래그를 True로 설정하고 재실행하여 깔끔하게 초기 화면으로 복귀
                         st.session_state.clear_search = True
                         st.success(f"🌱 '{selected_book['title']}' 책이 아지트에 추가되었습니다!")
                         st.rerun()
