@@ -137,11 +137,11 @@ st.markdown("""
 if "my_books" not in st.session_state:
     st.session_state.my_books = []
 
-if "user_name" not in st.session_state:
-    st.session_state.user_name = ""
+if "user_id" not in st.session_state:
+    st.session_state.user_id = ""
 
-if "original_username" not in st.session_state:
-    st.session_state.original_username = ""
+if "user_nickname" not in st.session_state:
+    st.session_state.user_nickname = ""
 
 if "profile_image" not in st.session_state:
     st.session_state.profile_image = None
@@ -179,18 +179,20 @@ BOOKS_FILE_PATH = "user_books.csv"
 
 def load_users_from_github():
     if not GITHUB_TOKEN or not GITHUB_REPO:
-        return pd.DataFrame(columns=["username", "password", "profile_img"])
+        return pd.DataFrame(columns=["username", "password", "nickname", "profile_img"])
     try:
         g = Github(GITHUB_TOKEN)
         repo = g.get_repo(GITHUB_REPO)
         file_content = repo.get_contents(USERS_FILE_PATH)
         decoded_data = base64.b64decode(file_content.content).decode("utf-8")
         df = pd.read_csv(StringIO(decoded_data))
+        if "nickname" not in df.columns:
+            df["nickname"] = df["username"]
         if "profile_img" not in df.columns:
             df["profile_img"] = ""
         return df
     except Exception:
-        return pd.DataFrame(columns=["username", "password", "profile_img"])
+        return pd.DataFrame(columns=["username", "password", "nickname", "profile_img"])
 
 def save_user_to_github(username, password):
     if not GITHUB_TOKEN or not GITHUB_REPO:
@@ -203,7 +205,7 @@ def save_user_to_github(username, password):
         if not df.empty and username in df["username"].values:
             return False, "이미 존재하는 아이디입니다."
         
-        new_row = pd.DataFrame([[username, password, ""]], columns=["username", "password", "profile_img"])
+        new_row = pd.DataFrame([[username, password, username, ""]], columns=["username", "password", "nickname", "profile_img"])
         df = pd.concat([df, new_row], ignore_index=True)
         csv_data = df.to_csv(index=False)
         
@@ -216,26 +218,25 @@ def save_user_to_github(username, password):
     except Exception as e:
         return False, f"오류 발생: {e}"
 
-def update_user_info_in_github(old_username, new_username, profile_b64):
-    if not GITHUB_TOKEN or not GITHUB_REPO or old_username == "게스트":
+def update_user_nickname_in_github(username, new_nickname, profile_b64):
+    if not GITHUB_TOKEN or not GITHUB_REPO or username == "게스트":
         return
     try:
         g = Github(GITHUB_TOKEN)
         repo = g.get_repo(GITHUB_REPO)
         df = load_users_from_github()
         
-        if old_username in df["username"].values:
-            df.loc[df["username"] == old_username, "username"] = new_username
-            df.loc[df["username"] == new_username, "profile_img"] = profile_b64
+        if username in df["username"].values:
+            df.loc[df["username"] == username, "nickname"] = new_nickname
+            df.loc[df["username"] == username, "profile_img"] = profile_b64
         else:
-            if new_username not in df["username"].values:
-                new_row = pd.DataFrame([[new_username, "", profile_b64]], columns=["username", "password", "profile_img"])
-                df = pd.concat([df, new_row], ignore_index=True)
+            new_row = pd.DataFrame([[username, "", new_nickname, profile_b64]], columns=["username", "password", "nickname", "profile_img"])
+            df = pd.concat([df, new_row], ignore_index=True)
             
         csv_data = df.to_csv(index=False)
         try:
             file = repo.get_contents(USERS_FILE_PATH)
-            repo.update_file(USERS_FILE_PATH, f"Update user info for {new_username}", csv_data, file.sha)
+            repo.update_file(USERS_FILE_PATH, f"Update nickname for {username}", csv_data, file.sha)
         except Exception:
             repo.create_file(USERS_FILE_PATH, f"Create {USERS_FILE_PATH}", csv_data)
     except Exception as e:
@@ -323,7 +324,7 @@ def save_books_for_user(username, books):
 # -----------------------------------------------------------------------------
 # 4. 로그인 및 회원가입 화면
 # -----------------------------------------------------------------------------
-if not st.session_state.user_name:
+if not st.session_state.user_id:
     st.markdown("<br><br>", unsafe_allow_html=True)
     _, center_col, _ = st.columns([1, 2, 1])
     
@@ -359,8 +360,12 @@ if not st.session_state.user_name:
                     else:
                         match = users_df[(users_df["username"] == login_id) & (users_df["password"] == login_pw)]
                         if not match.empty:
-                            st.session_state.user_name = login_id
-                            st.session_state.original_username = login_id
+                            st.session_state.user_id = login_id
+                            
+                            # 저장된 닉네임이 있다면 불러오고, 없으면 아이디를 기본 닉네임으로 설정
+                            stored_nickname = match.iloc[0].get("nickname", login_id)
+                            st.session_state.user_nickname = str(stored_nickname) if pd.notna(stored_nickname) and str(stored_nickname).strip() != "" else login_id
+                            
                             st.session_state.my_books = load_books_for_user(login_id)
                             
                             p_img_str = match.iloc[0].get("profile_img", "")
@@ -372,7 +377,7 @@ if not st.session_state.user_name:
                             else:
                                 st.session_state.profile_image = None
                                 
-                            st.success(f"환영합니다, {login_id}님! ✨")
+                            st.success(f"환영합니다, {st.session_state.user_nickname}님! ✨")
                             st.rerun()
                         else:
                             st.error("아이디 또는 비밀번호가 올바르지 않습니다.")
@@ -408,8 +413,8 @@ if not st.session_state.user_name:
             with auth_tab3:
                 st.write("☕ 로그인 없이 편안하게 체험해 보세요.")
                 if st.button("🛋️ 게스트로 입장하기", use_container_width=True, type="secondary"):
-                    st.session_state.user_name = "게스트"
-                    st.session_state.original_username = "게스트"
+                    st.session_state.user_id = "게스트"
+                    st.session_state.user_nickname = "게스트"
                     st.session_state.my_books = []
                     st.session_state.profile_image = None
                     st.rerun()
@@ -466,18 +471,15 @@ with st.sidebar:
     with st.container(border=True):
         st.markdown(f'<h3 style="margin-top:0; color:#5C4B43; font-size:1.2rem;">🌱 프로필 설정</h3>', unsafe_allow_html=True)
         
-        new_name = st.text_input("이름(닉네임) 수정", value=st.session_state.user_name)
-        if new_name != st.session_state.user_name and new_name.strip():
-            old_name = st.session_state.user_name
-            st.session_state.user_name = new_name.strip()
+        new_nickname = st.text_input("이름(닉네임) 수정", value=st.session_state.user_nickname)
+        if new_nickname != st.session_state.user_nickname and new_nickname.strip():
+            st.session_state.user_nickname = new_nickname.strip()
             
-            # 현재 프로필 이미지 바이트를 b64로 변환
             img_b64 = ""
             if st.session_state.profile_image:
                 img_b64 = base64.b64encode(st.session_state.profile_image).decode("utf-8")
                 
-            update_user_info_in_github(old_name, st.session_state.user_name, img_b64)
-            st.session_state.original_username = st.session_state.user_name
+            update_user_nickname_in_github(st.session_state.user_id, st.session_state.user_nickname, img_b64)
             st.success("닉네임이 성공적으로 변경되어 저장되었습니다!")
             st.rerun()
 
@@ -486,14 +488,14 @@ with st.sidebar:
             img_bytes = new_profile.getvalue()
             st.session_state.profile_image = img_bytes
             img_b64 = base64.b64encode(img_bytes).decode("utf-8")
-            update_user_info_in_github(st.session_state.user_name, st.session_state.user_name, img_b64)
+            update_user_nickname_in_github(st.session_state.user_id, st.session_state.user_nickname, img_b64)
             st.success("프로필 사진이 저장되었습니다!")
             st.rerun()
 
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("로그아웃 🚪", use_container_width=True):
-            st.session_state.user_name = ""
-            st.session_state.original_username = ""
+            st.session_state.user_id = ""
+            st.session_state.user_nickname = ""
             st.session_state.my_books = []
             st.session_state.profile_image = None
             st.rerun()
@@ -557,7 +559,7 @@ with st.sidebar:
                             "completed_date": comp_date_str
                         }
                         st.session_state.my_books.append(new_book)
-                        save_books_for_user(st.session_state.user_name, st.session_state.my_books)
+                        save_books_for_user(st.session_state.user_id, st.session_state.my_books)
                         
                         st.session_state.clear_search = True
                         st.success(f"🌱 '{selected_book['title']}' 책이 아지트에 추가되었습니다!")
@@ -586,7 +588,7 @@ def show_book_details(book):
             book["current_page"] = book["total_pages"]
             book["completed_date"] = completion_date.strftime("%Y-%m-%d")
             st.balloons()
-            save_books_for_user(st.session_state.user_name, st.session_state.my_books)
+            save_books_for_user(st.session_state.user_id, st.session_state.my_books)
             st.rerun()
 
     elif book["status"] == "읽기 완료":
@@ -605,14 +607,14 @@ def show_book_details(book):
         
         if st.button("평점 저장하기 ⭐", key=f"modal_save_rating_{book['id']}"):
             book["rating"] = int(new_rating)
-            save_books_for_user(st.session_state.user_name, st.session_state.my_books)
+            save_books_for_user(st.session_state.user_id, st.session_state.my_books)
             st.success("평점이 성공적으로 저장되었습니다! ✨")
             st.rerun()
 
     elif book["status"] == "위시리스트":
         if st.button("지금 읽기 시작 🌿", key=f"modal_start_{book['id']}"):
             book["status"] = "읽는 중"
-            save_books_for_user(st.session_state.user_name, st.session_state.my_books)
+            save_books_for_user(st.session_state.user_id, st.session_state.my_books)
             st.rerun()
 
     st.divider()
@@ -626,14 +628,14 @@ def show_book_details(book):
     )
     if st.button("인용구 저장 ✨", key=f"modal_save_note_{book['id']}"):
         book["notes"] = note_text
-        save_books_for_user(st.session_state.user_name, st.session_state.my_books)
+        save_books_for_user(st.session_state.user_id, st.session_state.my_books)
         st.success("메모가 저장되었습니다! 📝")
         st.rerun()
 
     st.divider()
     if st.button("🗑️ 삭제하기", key=f"modal_delete_{book['id']}", use_container_width=True):
         st.session_state.my_books = [b for b in st.session_state.my_books if b["id"] != book["id"]]
-        save_books_for_user(st.session_state.user_name, st.session_state.my_books)
+        save_books_for_user(st.session_state.user_id, st.session_state.my_books)
         st.success("책이 삭제되었습니다.")
         st.rerun()
 
@@ -641,7 +643,7 @@ def show_book_details(book):
 # -----------------------------------------------------------------------------
 # 8. 메인 화면 탭 구역
 # -----------------------------------------------------------------------------
-page_tab1, page_tab2 = st.tabs([f"☕ {st.session_state.user_name}의 아지트", "📚 내 책장"])
+page_tab1, page_tab2 = st.tabs([f"☕ {st.session_state.user_nickname}의 아지트", "📚 내 책장"])
 
 with page_tab1:
     with st.container(border=True):
@@ -659,7 +661,7 @@ with page_tab1:
                 """, unsafe_allow_html=True)
                 
         with col2:
-            st.markdown(f'<div class="luxury-title">☕ {st.session_state.user_name}의 아지트 ✨</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="luxury-title">☕ {st.session_state.user_nickname}의 아지트 ✨</div>', unsafe_allow_html=True)
             st.markdown("<br>", unsafe_allow_html=True)
             
             total_b = len(st.session_state.my_books)
