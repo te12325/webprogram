@@ -140,6 +140,9 @@ if "my_books" not in st.session_state:
 if "user_name" not in st.session_state:
     st.session_state.user_name = ""
 
+if "original_username" not in st.session_state:
+    st.session_state.original_username = ""
+
 if "profile_image" not in st.session_state:
     st.session_state.profile_image = None
 
@@ -213,28 +216,30 @@ def save_user_to_github(username, password):
     except Exception as e:
         return False, f"오류 발생: {e}"
 
-def update_user_profile_in_github(username, profile_b64):
-    if not GITHUB_TOKEN or not GITHUB_REPO or username == "게스트":
+def update_user_info_in_github(old_username, new_username, profile_b64):
+    if not GITHUB_TOKEN or not GITHUB_REPO or old_username == "게스트":
         return
     try:
         g = Github(GITHUB_TOKEN)
         repo = g.get_repo(GITHUB_REPO)
         df = load_users_from_github()
         
-        if username in df["username"].values:
-            df.loc[df["username"] == username, "profile_img"] = profile_b64
+        if old_username in df["username"].values:
+            df.loc[df["username"] == old_username, "username"] = new_username
+            df.loc[df["username"] == new_username, "profile_img"] = profile_b64
         else:
-            new_row = pd.DataFrame([[username, "", profile_b64]], columns=["username", "password", "profile_img"])
-            df = pd.concat([df, new_row], ignore_index=True)
+            if new_username not in df["username"].values:
+                new_row = pd.DataFrame([[new_username, "", profile_b64]], columns=["username", "password", "profile_img"])
+                df = pd.concat([df, new_row], ignore_index=True)
             
         csv_data = df.to_csv(index=False)
         try:
             file = repo.get_contents(USERS_FILE_PATH)
-            repo.update_file(USERS_FILE_PATH, f"Update profile for {username}", csv_data, file.sha)
+            repo.update_file(USERS_FILE_PATH, f"Update user info for {new_username}", csv_data, file.sha)
         except Exception:
             repo.create_file(USERS_FILE_PATH, f"Create {USERS_FILE_PATH}", csv_data)
     except Exception as e:
-        st.error(f"프로필 저장 중 오류 발생: {e}")
+        st.error(f"회원 정보 저장 중 오류 발생: {e}")
 
 def load_books_for_user(username):
     if not GITHUB_TOKEN or not GITHUB_REPO or username == "게스트":
@@ -355,6 +360,7 @@ if not st.session_state.user_name:
                         match = users_df[(users_df["username"] == login_id) & (users_df["password"] == login_pw)]
                         if not match.empty:
                             st.session_state.user_name = login_id
+                            st.session_state.original_username = login_id
                             st.session_state.my_books = load_books_for_user(login_id)
                             
                             p_img_str = match.iloc[0].get("profile_img", "")
@@ -403,6 +409,7 @@ if not st.session_state.user_name:
                 st.write("☕ 로그인 없이 편안하게 체험해 보세요.")
                 if st.button("🛋️ 게스트로 입장하기", use_container_width=True, type="secondary"):
                     st.session_state.user_name = "게스트"
+                    st.session_state.original_username = "게스트"
                     st.session_state.my_books = []
                     st.session_state.profile_image = None
                     st.rerun()
@@ -449,7 +456,6 @@ def render_star_rating(rating):
     full_stars = int(rating)
     empty_stars = 5 - full_stars
     
-    # 숫자(점) 및 한글 글자 없이 오직 별 기호만 반환
     return "★" * full_stars + "☆" * empty_stars
 
 
@@ -462,7 +468,17 @@ with st.sidebar:
         
         new_name = st.text_input("이름(닉네임) 수정", value=st.session_state.user_name)
         if new_name != st.session_state.user_name and new_name.strip():
+            old_name = st.session_state.user_name
             st.session_state.user_name = new_name.strip()
+            
+            # 현재 프로필 이미지 바이트를 b64로 변환
+            img_b64 = ""
+            if st.session_state.profile_image:
+                img_b64 = base64.b64encode(st.session_state.profile_image).decode("utf-8")
+                
+            update_user_info_in_github(old_name, st.session_state.user_name, img_b64)
+            st.session_state.original_username = st.session_state.user_name
+            st.success("닉네임이 성공적으로 변경되어 저장되었습니다!")
             st.rerun()
 
         new_profile = st.file_uploader("프로필 사진 등록/변경", type=["png", "jpg", "jpeg"], key="side_profile")
@@ -470,13 +486,14 @@ with st.sidebar:
             img_bytes = new_profile.getvalue()
             st.session_state.profile_image = img_bytes
             img_b64 = base64.b64encode(img_bytes).decode("utf-8")
-            update_user_profile_in_github(st.session_state.user_name, img_b64)
+            update_user_info_in_github(st.session_state.user_name, st.session_state.user_name, img_b64)
             st.success("프로필 사진이 저장되었습니다!")
             st.rerun()
 
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("로그아웃 🚪", use_container_width=True):
             st.session_state.user_name = ""
+            st.session_state.original_username = ""
             st.session_state.my_books = []
             st.session_state.profile_image = None
             st.rerun()
